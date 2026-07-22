@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Plantilla QWeb: Cobros de Cuentas por Cobrar (CxC)
+         ══════════════════════════════════════════════════════════════════ -->
+    <template id="daily_cxc_report_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="data" t-value="doc._get_report_data()"/>
+
+                <t t-call="web.internal_layout">
+                    <div class="page" style="font-family: Arial, Helvetica, sans-serif; font-size: 11px;">
+
+                        <!-- ════════════════════════════════════════════
+                             ENCABEZADO INSTITUCIONAL
+                             ════════════════════════════════════════════ -->
+                        <table style="width: 100%; margin-bottom: 10px;">
+                            <tr>
+                                <td style="width: 60%; vertical-align: top;">
+                                    <h3 style="margin: 0; font-size: 16px; font-weight: bold;">
+                                        <t t-esc="data['company'].name"/>
+                                    </h3>
+                                </td>
+                                <td style="width: 40%; text-align: right; vertical-align: top;">
+                                    <table style="float: right;">
+                                        <tr>
+                                            <td style="text-align: right; padding-right: 8px;"><strong>Fecha :</strong></td>
+                                            <td><t t-esc="doc.date_report" t-options='{"widget": "date"}'/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="text-align: right; padding-right: 8px;"><strong>Hora :</strong></td>
+                                            <td><t t-esc="data['time_report']"/></td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- ════════════════════════════════════════════
+                             TÍTULO DEL REPORTE
+                             ════════════════════════════════════════════ -->
+                        <h4 style="font-size: 14px; margin-top: 15px; margin-bottom: 5px; color: #1F4E79;">
+                            <strong>Reporte Diario de Entradas / Cobros de CxC</strong>
+                        </h4>
+                        <p style="margin: 2px 0 15px 0;">
+                            Fecha de Registro : <t t-esc="doc.date_report" t-options='{"widget": "date"}'/>
+                        </p>
+
+                        <!-- ════════════════════════════════════════════
+                             RESUMEN POR FORMA DE INGRESO
+                             ════════════════════════════════════════════ -->
+                        <p style="margin-bottom: 8px;">
+                            <strong><u>RESUMEN DE COBROS POR MÉTODO DE PAGO</u></strong>
+                        </p>
+
+                        <table style="width: 65%; border-collapse: collapse; font-size: 10px; margin-bottom: 20px;">
+                            <thead>
+                                <tr style="background-color: #1F4E79; color: white;">
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Método / Banco</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Transacciones</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Monto Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="data['methods']" t-as="m">
+                                    <tr style="page-break-inside: avoid;">
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                            <t t-esc="m['name']"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                            <t t-esc="m['count']"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(m['amount'])"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="font-weight: bold; border-top: 2px solid #333; background-color: #F2F2F2;">
+                                    <td style="padding: 4px 6px;">Total Ingresos CxC</td>
+                                    <td style="padding: 4px 6px; text-align: right;">
+                                        <t t-esc="data['total_count']"/>
+                                    </td>
+                                    <td style="padding: 4px 6px; text-align: right;">
+                                        <t t-esc="doc.fmt(data['grand_total'])"/>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                        <!-- ════════════════════════════════════════════
+                             DETALLE PAGO POR PAGO POR CLIENTE
+                             ════════════════════════════════════════════ -->
+                        <h4 style="font-size: 13px; margin-top: 20px; margin-bottom: 8px;">
+                            <strong>Detalle de Cobros y Abonos a Saldo</strong>
+                        </h4>
+
+                        <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                            <thead>
+                                <tr style="background-color: #1F4E79; color: white;">
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">N° Recibo / Pago</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Cliente</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Facturas / Concepto</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Método / Banco</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Referencia</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Monto Ingresado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="data['details']" t-as="det">
+                                    <tr style="page-break-inside: avoid;">
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                            <t t-esc="det['payment_name']"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                            <t t-esc="det['partner']"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                            <t t-esc="det['invoices']"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                            <t t-esc="det['method_name']"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                            <t t-esc="det['reference']"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right; font-weight: bold;">
+                                            <t t-esc="doc.fmt(det['amount'])"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="font-weight: bold; border-top: 2px solid #333; background-color: #F2F2F2;">
+                                    <td colspan="5" style="padding: 5px 6px; text-align: right;">
+                                        TOTAL GENERAL COBROS CXC:
+                                    </td>
+                                    <td style="padding: 5px 6px; text-align: right; font-size: 11px;">
+                                        <t t-esc="doc.fmt(data['grand_total'])"/>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

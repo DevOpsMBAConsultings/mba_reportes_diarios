@@ -3,3 +3,4 @@ access_mba_report_template_user,mba.report.template.user,model_mba_report_templa
 access_mba_report_template_manager,mba.report.template.manager,model_mba_report_template,account.group_account_manager,1,1,1,1
 access_mba_daily_invoice_wizard_user,mba.daily.invoice.wizard.user,model_mba_daily_invoice_wizard,account.group_account_user,1,1,1,0
 access_mba_daily_pos_wizard_user,mba.daily.pos.wizard.user,model_mba_daily_pos_wizard,account.group_account_user,1,1,1,0
+access_mba_daily_cxc_wizard_user,mba.daily.cxc.wizard.user,model_mba_daily_cxc_wizard,account.group_account_user,1,1,1,0

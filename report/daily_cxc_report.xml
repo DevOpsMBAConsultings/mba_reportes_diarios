@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Acción de Reporte: Cobros de Cuentas por Cobrar (CxC)
+         ══════════════════════════════════════════════════════════════════ -->
+    <record id="action_report_daily_cxc" model="ir.actions.report">
+        <field name="name">Cobros de Cuentas por Cobrar (CxC)</field>
+        <field name="model">mba.daily.cxc.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">mba_reportes_diarios.daily_cxc_report_template</field>
+        <field name="report_file">mba_reportes_diarios.daily_cxc_report_template</field>
+        <field name="print_report_name">'Cobros CxC - %s' % (object.date_report)</field>
+    </record>
+
+</odoo>

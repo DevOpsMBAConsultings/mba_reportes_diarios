@@ -17,7 +17,18 @@
             <field name="active" eval="True"/>
         </record>
 
-        <!-- Reporte 2: Cierre de Caja — POS -->
+        <!-- Reporte 2: Cobros de Cuentas por Cobrar (CxC) -->
+        <record id="report_template_daily_cxc" model="mba.report.template">
+            <field name="name">Cobros de Cuentas por Cobrar (CxC)</field>
+            <field name="description">Reporte diario de abonos, cobros de cartera y entradas de Cuentas por Cobrar. Muestra el resumen por banco/diario y el detalle por cliente.</field>
+            <field name="sequence">15</field>
+            <field name="icon">fa-money</field>
+            <field name="required_module"/>
+            <field name="wizard_action_xmlid">mba_reportes_diarios.action_daily_cxc_wizard</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Reporte 3: Cierre de Caja — POS -->
         <record id="report_template_daily_pos" model="mba.report.template">
             <field name="name">Cierre de Caja - Punto de Venta (POS)</field>
             <field name="description">Reporte diario de cierre de caja del Punto de Venta. Incluye resumen de sesiones POS, desglose por método de pago, detalle de órdenes y productos vendidos. Requiere el módulo point_of_sale.</field>
