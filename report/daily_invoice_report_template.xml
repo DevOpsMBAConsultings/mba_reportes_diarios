@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Plantilla QWeb: Cierre de Caja Diario (Facturación)
+         Diseño fiel al reporte "Ventas Diarias" de Moto Lider
+         ══════════════════════════════════════════════════════════════════ -->
+    <template id="daily_invoice_report_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="data" t-value="doc._get_report_data()"/>
+                <t t-set="s" t-value="data['summary']"/>
+                <t t-set="cb" t-value="data['contado_breakdown']"/>
+                <t t-set="cxc" t-value="data['cxc']"/>
+                <t t-set="cxcb" t-value="data['cxc_breakdown']"/>
+
+                <t t-call="web.internal_layout">
+                    <div class="page" style="font-family: Arial, Helvetica, sans-serif; font-size: 11px;">
+
+                        <!-- ════════════════════════════════════════════
+                             ENCABEZADO
+                             ════════════════════════════════════════════ -->
+                        <table style="width: 100%; margin-bottom: 10px;">
+                            <tr>
+                                <td style="width: 60%; vertical-align: top;">
+                                    <h3 style="margin: 0; font-size: 16px; font-weight: bold;">
+                                        <t t-esc="data['company'].name"/>
+                                    </h3>
+                                </td>
+                                <td style="width: 40%; text-align: right; vertical-align: top;">
+                                    <table style="float: right;">
+                                        <tr>
+                                            <td style="text-align: right; padding-right: 8px;"><strong>Fecha :</strong></td>
+                                            <td><t t-esc="doc.date_report" t-options='{"widget": "date"}'/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="text-align: right; padding-right: 8px;"><strong>Hora :</strong></td>
+                                            <td><t t-esc="data['time_report']"/></td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- ════════════════════════════════════════════
+                             TÍTULO
+                             ════════════════════════════════════════════ -->
+                        <h4 style="font-size: 14px; margin-top: 15px; margin-bottom: 5px;">
+                            <strong>Ventas diarias</strong>
+                        </h4>
+                        <p style="margin: 2px 0;">Fecha : <t t-esc="doc.date_report" t-options='{"widget": "date"}'/></p>
+                        <p style="margin: 2px 0 15px 0;">Serie : <t t-esc="data['series_name']"/></p>
+
+                        <!-- ════════════════════════════════════════════
+                             SECCIÓN 1: CIERRE DE OPERACIONES DE FACTURAS
+                             ════════════════════════════════════════════ -->
+                        <p style="margin-bottom: 8px;">
+                            <strong><u>CIERRE DE OPERACIONES DE FACTURAS</u></strong>
+                        </p>
+
+                        <table style="width: 100%; margin-bottom: 5px;">
+                            <!-- Fila 1: Ventas Brutas / Efectivo -->
+                            <tr>
+                                <td style="width: 30%;">Total Ventas Brutas :</td>
+                                <td style="width: 20%; text-align: right;">
+                                    <t t-esc="doc.fmt(s['total_ventas_brutas'])"/>
+                                </td>
+                                <td style="width: 5%;"/>
+                                <td style="width: 25%;">Total Efectivo :</td>
+                                <td style="width: 20%; text-align: right;">
+                                    <t t-esc="doc.fmt(cb['efectivo'])"/>
+                                </td>
+                            </tr>
+                            <!-- Fila 2: ITBMS / Voucher -->
+                            <tr>
+                                <td>Total ITBMS(7%):</td>
+                                <td style="text-align: right;">
+                                    <t t-esc="doc.fmt(s['total_itbms'])"/>
+                                </td>
+                                <td/>
+                                <td>Total Número de Voucher :</td>
+                                <td style="text-align: right;">
+                                    <t t-esc="doc.fmt(cb['voucher_count'])"/>
+                                </td>
+                            </tr>
+                            <!-- Fila 3: Contado / Tarjeta -->
+                            <tr>
+                                <td>Total Contado :</td>
+                                <td style="text-align: right;">
+                                    <t t-esc="doc.fmt(s['total_contado'])"/>
+                                </td>
+                                <td/>
+                                <td>Total en Tarjetas Crédito :</td>
+                                <td style="text-align: right;">
+                                    <t t-esc="doc.fmt(cb['tarjeta'])"/>
+                                </td>
+                            </tr>
+                            <!-- Fila 4: Crédito / Transferencias -->
+                            <tr>
+                                <td>Total Crédito en Operaciones :</td>
+                                <td style="text-align: right;">
+                                    <t t-esc="doc.fmt(s['total_credito'])"/>
+                                </td>
+                                <td/>
+                                <td>Total Transferencias :</td>
+                                <td style="text-align: right;">
+                                    <t t-esc="doc.fmt(cb['transferencia'])"/>
+                                </td>
+                            </tr>
+                            <!-- Fila 5: Transacciones / Ingresos -->
+                            <tr>
+                                <td>Total Transacciones :</td>
+                                <td style="text-align: right;">
+                                    <t t-esc="doc.fmt(s['total_transacciones'])"/>
+                                </td>
+                                <td/>
+                                <td>Total Ingresos :</td>
+                                <td style="text-align: right; font-weight: bold;">
+                                    <t t-esc="doc.fmt(cb['total'])"/>
+                                </td>
+                            </tr>
+                            <!-- Fila 6: Gravable -->
+                            <tr>
+                                <td>Total Gravable :</td>
+                                <td style="text-align: right;">
+                                    <t t-esc="doc.fmt(s['total_gravable'])"/>
+                                </td>
+                                <td colspan="3"/>
+                            </tr>
+                            <!-- Fila 7: Exento -->
+                            <tr>
+                                <td>Total Exento :</td>
+                                <td style="text-align: right;">
+                                    <t t-esc="doc.fmt(s['total_exento'])"/>
+                                </td>
+                                <td colspan="3"/>
+                            </tr>
+                        </table>
+
+                        <!-- ════════════════════════════════════════════
+                             SECCIÓN 2: OPERACIONES EN CUENTAS x COBRAR
+                             ════════════════════════════════════════════ -->
+                        <p style="margin-top: 15px; margin-bottom: 8px;">
+                            <strong><u>OPERACIONES EN CUENTAS x COBRAR</u></strong>
+                        </p>
+
+                        <table style="width: 100%; margin-bottom: 5px;">
+                            <tr>
+                                <td style="width: 30%;">Número de Facturas :</td>
+                                <td style="width: 20%; text-align: right;">
+                                    <t t-esc="doc.fmt(cxc['num_facturas'])"/>
+                                </td>
+                                <td style="width: 5%;"/>
+                                <td style="width: 25%;">Total Efectivo :</td>
+                                <td style="width: 20%; text-align: right;">
+                                    <t t-esc="doc.fmt(cxcb['efectivo'])"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Número de Pagos Recibidos :</td>
+                                <td style="text-align: right;">
+                                    <t t-esc="doc.fmt(cxc['num_pagos'])"/>
+                                </td>
+                                <td/>
+                                <td>Total Transferencias :</td>
+                                <td style="text-align: right;">
+                                    <t t-esc="doc.fmt(cxcb['transferencia'])"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Monto en pagos recibidos :</td>
+                                <td style="text-align: right;">
+                                    <t t-esc="doc.fmt(cxc['monto_pagos'])"/>
+                                </td>
+                                <td/>
+                                <td>Total Ingresos :</td>
+                                <td style="text-align: right; font-weight: bold;">
+                                    <t t-esc="doc.fmt(cxcb['total'])"/>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Gran Total -->
+                        <table style="width: 100%; margin-top: 10px; margin-bottom: 20px;">
+                            <tr>
+                                <td style="width: 50%;"/>
+                                <td style="width: 25%; text-align: right;">
+                                    <strong>Total Ingresos :</strong>
+                                </td>
+                                <td style="width: 25%; text-align: right; font-weight: bold; font-size: 12px;">
+                                    <t t-esc="doc.fmt(data['total_ingresos_general'])"/>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- ════════════════════════════════════════════
+                             SECCIÓN 3: TRANSACCIONES DEL DÍA
+                             ════════════════════════════════════════════ -->
+                        <h4 style="font-size: 13px; margin-top: 20px; margin-bottom: 8px;">
+                            <strong>Transacciones del día</strong>
+                        </h4>
+
+                        <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                            <thead>
+                                <tr style="background-color: #8B0000; color: white;">
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Documento</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Descripción</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Monto Neto</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Impuestos</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Contado</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Crédito</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="data['transactions']" t-as="tx">
+                                    <tr style="page-break-inside: avoid;">
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                            <t t-esc="tx['documento']"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                            <t t-esc="tx['descripcion']"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(tx['monto_neto'])"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(tx['impuestos'])"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(tx['contado'])"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(tx['credito'])"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="font-weight: bold; border-top: 2px solid #333;">
+                                    <td colspan="2" style="padding: 4px 6px;"/>
+                                    <td style="padding: 4px 6px; text-align: right;">
+                                        <t t-esc="doc.fmt(data['tx_totals']['monto_neto'])"/>
+                                    </td>
+                                    <td style="padding: 4px 6px; text-align: right;">
+                                        <t t-esc="doc.fmt(data['tx_totals']['impuestos'])"/>
+                                    </td>
+                                    <td style="padding: 4px 6px; text-align: right;">
+                                        <t t-esc="doc.fmt(data['tx_totals']['contado'])"/>
+                                    </td>
+                                    <td style="padding: 4px 6px; text-align: right;">
+                                        <t t-esc="doc.fmt(data['tx_totals']['credito'])"/>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                        <!-- ════════════════════════════════════════════
+                             SECCIÓN 4: PRODUCTOS VENDIDOS
+                             ════════════════════════════════════════════ -->
+                        <h4 style="font-size: 13px; margin-top: 25px; margin-bottom: 8px;">
+                            <strong>Productos Vendidos</strong>
+                        </h4>
+
+                        <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                            <thead>
+                                <tr style="background-color: #8B0000; color: white;">
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Item</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Descripción</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Cantidad</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Monto Bruto</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Impuestos</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Monto Neto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="data['products']" t-as="prod">
+                                    <tr style="page-break-inside: avoid;">
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                            <t t-esc="prod['item']"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                            <t t-esc="prod['descripcion']"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt_int(prod['cantidad'])"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(prod['monto_bruto'])"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(prod['impuestos'])"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(prod['monto_neto'])"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="font-weight: bold; border-top: 2px solid #333;">
+                                    <td colspan="2" style="padding: 4px 6px;"/>
+                                    <td style="padding: 4px 6px; text-align: right;">
+                                        <t t-esc="doc.fmt_int(data['prod_totals']['cantidad'])"/>
+                                    </td>
+                                    <td style="padding: 4px 6px; text-align: right;">
+                                        <t t-esc="doc.fmt(data['prod_totals']['monto_bruto'])"/>
+                                    </td>
+                                    <td style="padding: 4px 6px; text-align: right;">
+                                        <t t-esc="doc.fmt(data['prod_totals']['impuestos'])"/>
+                                    </td>
+                                    <td style="padding: 4px 6px; text-align: right;">
+                                        <t t-esc="doc.fmt(data['prod_totals']['monto_neto'])"/>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

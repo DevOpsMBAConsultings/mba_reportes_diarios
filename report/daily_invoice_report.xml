@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Acción de Reporte: Cierre de Caja Diario (Facturación)
+         ══════════════════════════════════════════════════════════════════ -->
+    <record id="action_report_daily_invoice" model="ir.actions.report">
+        <field name="name">Cierre de Caja - Facturación</field>
+        <field name="model">mba.daily.invoice.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">mba_reportes_diarios.daily_invoice_report_template</field>
+        <field name="report_file">mba_reportes_diarios.daily_invoice_report_template</field>
+        <field name="print_report_name">'Cierre Diario Facturación - %s' % (object.date_report)</field>
+    </record>
+
+</odoo>

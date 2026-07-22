@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Vista Form: Wizard Cierre de Caja (Facturación)
+         ══════════════════════════════════════════════════════════════════ -->
+    <record id="view_daily_invoice_wizard_form" model="ir.ui.view">
+        <field name="name">mba.daily.invoice.wizard.form</field>
+        <field name="model">mba.daily.invoice.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Cierre de Caja - Facturación">
+                <group>
+                    <group>
+                        <field name="date_report"/>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                    </group>
+                    <group>
+                        <field name="journal_ids" widget="many2many_tags"
+                               placeholder="Dejar vacío para incluir todos los diarios"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_print_report"
+                            string="Generar Reporte PDF"
+                            type="object"
+                            class="btn-primary"
+                            icon="fa-print"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción de ventana del wizard -->
+    <record id="action_daily_invoice_wizard" model="ir.actions.act_window">
+        <field name="name">Cierre de Caja - Facturación</field>
+        <field name="res_model">mba.daily.invoice.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

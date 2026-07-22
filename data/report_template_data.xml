@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ══════════════════════════════════════════════════════════════
+             Registros iniciales del Catálogo de Reportes
+             ══════════════════════════════════════════════════════════════ -->
+
+        <!-- Reporte 1: Cierre de Caja — Facturación -->
+        <record id="report_template_daily_invoice" model="mba.report.template">
+            <field name="name">Cierre de Caja - Facturación</field>
+            <field name="description">Reporte diario de cierre de caja basado en facturas (account.move) y pagos recibidos (account.payment). Incluye resumen de operaciones, transacciones del día y productos vendidos.</field>
+            <field name="sequence">10</field>
+            <field name="icon">fa-file-text-o</field>
+            <field name="required_module"/>
+            <field name="wizard_action_xmlid">mba_reportes_diarios.action_daily_invoice_wizard</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Reporte 2: Cierre de Caja — POS -->
+        <record id="report_template_daily_pos" model="mba.report.template">
+            <field name="name">Cierre de Caja - Punto de Venta (POS)</field>
+            <field name="description">Reporte diario de cierre de caja del Punto de Venta. Incluye resumen de sesiones POS, desglose por método de pago, detalle de órdenes y productos vendidos. Requiere el módulo point_of_sale.</field>
+            <field name="sequence">20</field>
+            <field name="icon">fa-shopping-cart</field>
+            <field name="required_module">point_of_sale</field>
+            <field name="wizard_action_xmlid">mba_reportes_diarios.action_daily_pos_wizard</field>
+            <field name="active" eval="True"/>
+        </record>
+
+    </data>
+</odoo>

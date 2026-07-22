@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Vistas del Catálogo de Reportes
+         ══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Vista Tree (Lista) -->
+    <record id="view_report_template_tree" model="ir.ui.view">
+        <field name="name">mba.report.template.tree</field>
+        <field name="model">mba.report.template</field>
+        <field name="arch" type="xml">
+            <tree string="Reportes Disponibles" decoration-muted="not module_installed">
+                <field name="sequence" widget="handle"/>
+                <field name="icon" column_invisible="1"/>
+                <field name="name"/>
+                <field name="description"/>
+                <field name="required_module"/>
+                <field name="module_installed" string="Disponible"
+                       widget="boolean" readonly="1"/>
+                <field name="active" widget="boolean_toggle"/>
+                <button name="action_open_wizard"
+                        type="object"
+                        string="Generar"
+                        class="btn-primary btn-sm"
+                        icon="fa-print"
+                        invisible="not module_installed"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Vista Form -->
+    <record id="view_report_template_form" model="ir.ui.view">
+        <field name="name">mba.report.template.form</field>
+        <field name="model">mba.report.template</field>
+        <field name="arch" type="xml">
+            <form string="Plantilla de Reporte">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nombre del Reporte"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="icon"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="required_module"/>
+                            <field name="module_installed" readonly="1"/>
+                            <field name="wizard_action_xmlid"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description" placeholder="Descripción del reporte..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Acción de Ventana y Menú
+         ══════════════════════════════════════════════════════════════════ -->
+
+    <record id="action_report_template_list" model="ir.actions.act_window">
+        <field name="name">Reportes Diarios</field>
+        <field name="res_model">mba.report.template</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay reportes configurados
+            </p>
+            <p>
+                Cree o active reportes desde esta vista.
+                Los reportes que requieren módulos adicionales (como POS)
+                se activarán automáticamente cuando el módulo esté instalado.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menú: Contabilidad → Reportes → Reportes Diarios -->
+    <menuitem id="menu_daily_reports_root"
+              name="Reportes Diarios"
+              parent="account.menu_finance_reports"
+              action="action_report_template_list"
+              sequence="99"/>
+
+</odoo>

@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Plantilla QWeb: Cierre de Caja Diario (POS)
+         ══════════════════════════════════════════════════════════════════ -->
+    <template id="daily_pos_report_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="data" t-value="doc._get_report_data()"/>
+
+                <t t-call="web.internal_layout">
+                    <div class="page" style="font-family: Arial, Helvetica, sans-serif; font-size: 11px;">
+
+                        <!-- ════════════════════════════════════════════
+                             ENCABEZADO
+                             ════════════════════════════════════════════ -->
+                        <table style="width: 100%; margin-bottom: 10px;">
+                            <tr>
+                                <td style="width: 60%; vertical-align: top;">
+                                    <h3 style="margin: 0; font-size: 16px; font-weight: bold;">
+                                        <t t-esc="data['company'].name"/>
+                                    </h3>
+                                </td>
+                                <td style="width: 40%; text-align: right; vertical-align: top;">
+                                    <table style="float: right;">
+                                        <tr>
+                                            <td style="text-align: right; padding-right: 8px;"><strong>Fecha :</strong></td>
+                                            <td><t t-esc="doc.date_report" t-options='{"widget": "date"}'/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="text-align: right; padding-right: 8px;"><strong>Hora :</strong></td>
+                                            <td><t t-esc="data['time_report']"/></td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- ════════════════════════════════════════════
+                             TÍTULO
+                             ════════════════════════════════════════════ -->
+                        <h4 style="font-size: 14px; margin-top: 15px; margin-bottom: 5px;">
+                            <strong>Cierre de Caja - Punto de Venta</strong>
+                        </h4>
+                        <p style="margin: 2px 0 15px 0;">
+                            Fecha : <t t-esc="doc.date_report" t-options='{"widget": "date"}'/>
+                        </p>
+
+                        <!-- ════════════════════════════════════════════
+                             SESIONES DEL DÍA
+                             ════════════════════════════════════════════ -->
+                        <t t-if="data['sessions']">
+                            <p style="margin-bottom: 8px;">
+                                <strong><u>SESIONES POS DEL DÍA</u></strong>
+                            </p>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 15px;">
+                                <thead>
+                                    <tr style="background-color: #2E7D32; color: white;">
+                                        <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Sesión</th>
+                                        <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Punto de Venta</th>
+                                        <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Cajero</th>
+                                        <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="data['sessions']" t-as="sess">
+                                        <tr style="page-break-inside: avoid;">
+                                            <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                                <t t-esc="sess['name']"/>
+                                            </td>
+                                            <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                                <t t-esc="sess['config_name']"/>
+                                            </td>
+                                            <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                                <t t-esc="sess['user']"/>
+                                            </td>
+                                            <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                                <t t-esc="sess['state']"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </t>
+
+                        <!-- ════════════════════════════════════════════
+                             RESUMEN DE VENTAS POS
+                             ════════════════════════════════════════════ -->
+                        <p style="margin-bottom: 8px;">
+                            <strong><u>RESUMEN DE VENTAS POS</u></strong>
+                        </p>
+
+                        <table style="width: 100%; margin-bottom: 15px;">
+                            <tr>
+                                <td style="width: 30%;">Total Órdenes :</td>
+                                <td style="width: 20%; text-align: right;">
+                                    <t t-esc="doc.fmt_int(data['total_ordenes'])"/>
+                                </td>
+                                <td style="width: 5%;"/>
+                                <td style="width: 25%;">Total Ventas :</td>
+                                <td style="width: 20%; text-align: right; font-weight: bold;">
+                                    <t t-esc="doc.fmt(data['total_ventas'])"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Total Sin Impuesto :</td>
+                                <td style="text-align: right;">
+                                    <t t-esc="doc.fmt(data['total_sin_impuesto'])"/>
+                                </td>
+                                <td/>
+                                <td>Total Impuestos :</td>
+                                <td style="text-align: right;">
+                                    <t t-esc="doc.fmt(data['total_impuestos'])"/>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- ════════════════════════════════════════════
+                             DESGLOSE POR MÉTODO DE PAGO
+                             ════════════════════════════════════════════ -->
+                        <t t-if="data['payment_methods']">
+                            <p style="margin-bottom: 8px;">
+                                <strong><u>DESGLOSE POR MÉTODO DE PAGO</u></strong>
+                            </p>
+                            <table style="width: 60%; border-collapse: collapse; font-size: 10px; margin-bottom: 15px;">
+                                <thead>
+                                    <tr style="background-color: #2E7D32; color: white;">
+                                        <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Método de Pago</th>
+                                        <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Transacciones</th>
+                                        <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Monto</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="data['payment_methods']" t-as="pm">
+                                        <tr style="page-break-inside: avoid;">
+                                            <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                                <t t-esc="pm['name']"/>
+                                            </td>
+                                            <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                                <t t-esc="pm['count']"/>
+                                            </td>
+                                            <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                                <t t-esc="doc.fmt(pm['amount'])"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="font-weight: bold; border-top: 2px solid #333;">
+                                        <td style="padding: 4px 6px;">Total</td>
+                                        <td style="padding: 4px 6px;"/>
+                                        <td style="padding: 4px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(data['total_pagos'])"/>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </t>
+
+                        <!-- ════════════════════════════════════════════
+                             DETALLE DE ÓRDENES POS
+                             ════════════════════════════════════════════ -->
+                        <h4 style="font-size: 13px; margin-top: 20px; margin-bottom: 8px;">
+                            <strong>Detalle de Órdenes del Día</strong>
+                        </h4>
+
+                        <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                            <thead>
+                                <tr style="background-color: #2E7D32; color: white;">
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Orden</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Cliente</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Método Pago</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Subtotal</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Impuestos</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="data['orders']" t-as="order">
+                                    <tr style="page-break-inside: avoid;">
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                            <t t-esc="order['name']"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                            <t t-esc="order['partner']"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                            <t t-esc="order['payment_method']"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(order['amount_untaxed'])"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(order['amount_tax'])"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(order['amount_total'])"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="font-weight: bold; border-top: 2px solid #333;">
+                                    <td colspan="3" style="padding: 4px 6px;"/>
+                                    <td style="padding: 4px 6px; text-align: right;">
+                                        <t t-esc="doc.fmt(data['order_totals']['amount_untaxed'])"/>
+                                    </td>
+                                    <td style="padding: 4px 6px; text-align: right;">
+                                        <t t-esc="doc.fmt(data['order_totals']['amount_tax'])"/>
+                                    </td>
+                                    <td style="padding: 4px 6px; text-align: right;">
+                                        <t t-esc="doc.fmt(data['order_totals']['amount_total'])"/>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                        <!-- ════════════════════════════════════════════
+                             PRODUCTOS VENDIDOS (POS)
+                             ════════════════════════════════════════════ -->
+                        <h4 style="font-size: 13px; margin-top: 25px; margin-bottom: 8px;">
+                            <strong>Productos Vendidos</strong>
+                        </h4>
+
+                        <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                            <thead>
+                                <tr style="background-color: #2E7D32; color: white;">
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Item</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Descripción</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Cantidad</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Monto Bruto</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Impuestos</th>
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Monto Neto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="data['products']" t-as="prod">
+                                    <tr style="page-break-inside: avoid;">
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                            <t t-esc="prod['item']"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                            <t t-esc="prod['descripcion']"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt_int(prod['cantidad'])"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(prod['monto_bruto'])"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(prod['impuestos'])"/>
+                                        </td>
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(prod['monto_neto'])"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="font-weight: bold; border-top: 2px solid #333;">
+                                    <td colspan="2" style="padding: 4px 6px;"/>
+                                    <td style="padding: 4px 6px; text-align: right;">
+                                        <t t-esc="doc.fmt_int(data['prod_totals']['cantidad'])"/>
+                                    </td>
+                                    <td style="padding: 4px 6px; text-align: right;">
+                                        <t t-esc="doc.fmt(data['prod_totals']['monto_bruto'])"/>
+                                    </td>
+                                    <td style="padding: 4px 6px; text-align: right;">
+                                        <t t-esc="doc.fmt(data['prod_totals']['impuestos'])"/>
+                                    </td>
+                                    <td style="padding: 4px 6px; text-align: right;">
+                                        <t t-esc="doc.fmt(data['prod_totals']['monto_neto'])"/>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>
