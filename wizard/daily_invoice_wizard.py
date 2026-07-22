@@ -144,6 +144,26 @@ class MbaDailyInvoiceWizard(models.TransientModel):
 
     # ── Datos del reporte ───────────────────────────────────────────────────
 
+    def _is_invoice_credit(self, inv):
+        """Determina si una factura es a crédito o contado."""
+        # 1. Si existe el campo DGI (mba_pa_edi)
+        if hasattr(inv, 'dgi_payment_term_type') and inv.dgi_payment_term_type:
+            return inv.dgi_payment_term_type == 'credito'
+
+        # 2. Términos de Pago estándar de Odoo (invoice_payment_term_id)
+        term = inv.invoice_payment_term_id
+        if term:
+            tname = (term.name or '').lower()
+            if any(kw in tname for kw in ('contado', 'inmediato', 'immediate', '0 día', '0 dia')):
+                return False
+            if any(kw in tname for kw in ('crédito', 'credito', '30', '60', '90', '120', 'día', 'dia')):
+                return True
+            for line in term.line_ids:
+                if getattr(line, 'nb_days', 0) > 0:
+                    return True
+
+        return False
+
     def _get_report_data(self):
         """
         Calcula todos los datos necesarios para el reporte PDF.
@@ -168,20 +188,9 @@ class MbaDailyInvoiceWizard(models.TransientModel):
             - sum(inv_refund.mapped('amount_tax'))
         )
 
-        # Contado vs Crédito (campo DGI si existe, sino todo como contado)
-        has_dgi = 'dgi_payment_term_type' in self.env['account.move']._fields
-
-        if has_dgi:
-            inv_contado = invoices.filtered(
-                lambda i: i.dgi_payment_term_type == 'contado'
-            )
-            inv_credito = invoices.filtered(
-                lambda i: i.dgi_payment_term_type == 'credito'
-            )
-        else:
-            # Sin campos DGI → todo es contado
-            inv_contado = invoices
-            inv_credito = self.env['account.move']
+        # Contado vs Crédito (DGI o Término de Pago Odoo)
+        inv_credito = invoices.filtered(lambda i: self._is_invoice_credit(i))
+        inv_contado = invoices - inv_credito
 
         def _sum_signed(records, field='amount_total'):
             """Suma con signo: positivo para facturas, negativo para notas de crédito."""
@@ -229,7 +238,7 @@ class MbaDailyInvoiceWizard(models.TransientModel):
             impuestos = (inv.amount_tax or 0.0) * sign
             amount_total = (inv.amount_total or 0.0) * sign
 
-            is_contado = (not has_dgi) or (inv.dgi_payment_term_type == 'contado')
+            is_contado = not self._is_invoice_credit(inv)
 
             # Código del partner (ref o vat)
             partner_code = ''
