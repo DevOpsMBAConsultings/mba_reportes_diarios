@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Plantilla QWeb: Resumen Mensual de Ingresos (MTD) - Matriz Horizontal
+         ══════════════════════════════════════════════════════════════════ -->
+    <template id="monthly_income_report_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="data" t-value="doc._get_report_data()"/>
+
+                <t t-call="web.internal_layout">
+                    <div class="page" style="font-family: Arial, Helvetica, sans-serif; font-size: 9px;">
+
+                        <!-- ════════════════════════════════════════════
+                             ENCABEZADO
+                             ════════════════════════════════════════════ -->
+                        <table style="width: 100%; margin-bottom: 8px;">
+                            <tr>
+                                <td style="width: 60%; vertical-align: top;">
+                                    <h3 style="margin: 0; font-size: 15px; font-weight: bold; color: #1F4E79;">
+                                        <t t-esc="data['company'].name"/>
+                                    </h3>
+                                    <h4 style="margin: 3px 0 0 0; font-size: 13px; font-weight: bold;">
+                                        TABLA DE INGRESOS MENSUALES (MONTH-TO-DATE / MTD)
+                                    </h4>
+                                </td>
+                                <td style="width: 40%; text-align: right; vertical-align: top;">
+                                    <table style="float: right;">
+                                        <tr>
+                                            <td style="text-align: right; padding-right: 8px;"><strong>Periodo :</strong></td>
+                                            <td>
+                                                <t t-esc="data['date_from']" t-options='{"widget": "date"}'/>
+                                                al
+                                                <t t-esc="data['date_to']" t-options='{"widget": "date"}'/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="text-align: right; padding-right: 8px;"><strong>Impreso :</strong></td>
+                                            <td><t t-esc="data['time_report']"/></td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- ════════════════════════════════════════════
+                             MATRIZ DE INGRESOS (EXCEL STYLE)
+                             ════════════════════════════════════════════ -->
+                        <table style="width: 100%; border-collapse: collapse; font-size: 8px; margin-top: 10px;">
+                            <thead>
+                                <!-- Fila 1: Días de la semana -->
+                                <tr style="background-color: #2F5597; color: white;">
+                                    <th style="border: 1px solid #444; padding: 3px 4px; text-align: left; width: 180px;">
+                                        TIPO VENTA / FECHA
+                                    </th>
+                                    <t t-foreach="data['day_headers']" t-as="h">
+                                        <th style="border: 1px solid #444; padding: 3px 2px; text-align: center;">
+                                            <t t-esc="h['day_name']"/>
+                                        </th>
+                                    </t>
+                                    <th style="border: 1px solid #444; padding: 3px 4px; text-align: right; background-color: #1F4E79; width: 80px;">
+                                        TOTAL MTD
+                                    </th>
+                                </tr>
+                                <!-- Fila 2: Fechas del mes -->
+                                <tr style="background-color: #D9E1F2; color: #1F4E79; font-weight: bold;">
+                                    <th style="border: 1px solid #888; padding: 3px 4px; text-align: left;">
+                                        INGRESOS
+                                    </th>
+                                    <t t-foreach="data['day_headers']" t-as="h">
+                                        <th style="border: 1px solid #888; padding: 3px 2px; text-align: center;">
+                                            <t t-esc="h['label']"/>
+                                        </th>
+                                    </t>
+                                    <th style="border: 1px solid #888; padding: 3px 4px; text-align: right; background-color: #B4C6E7;">
+                                        ACUMULADO
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="data['concept_rows']" t-as="row">
+                                    <tr style="page-break-inside: avoid;">
+                                        <td style="border: 1px solid #ccc; padding: 3px 4px; font-weight: bold; background-color: #F2F2F2;">
+                                            <t t-esc="row['name']"/>
+                                        </td>
+                                        <t t-foreach="row['values']" t-as="val">
+                                            <td style="border: 1px solid #ccc; padding: 3px 2px; text-align: right;">
+                                                <t t-esc="doc.fmt(val)"/>
+                                            </td>
+                                        </t>
+                                        <td style="border: 1px solid #888; padding: 3px 4px; text-align: right; font-weight: bold; background-color: #E9EEF4;">
+                                            <t t-esc="doc.fmt_total(row['total'])"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <!-- Fila de Totales Diarios -->
+                                <tr style="font-weight: bold; background-color: #2F5597; color: white;">
+                                    <td style="border: 1px solid #444; padding: 4px; text-align: left;">
+                                        TOTAL INGRESOS DIARIOS
+                                    </td>
+                                    <t t-foreach="data['daily_totals']" t-as="d_tot">
+                                        <td style="border: 1px solid #444; padding: 4px 2px; text-align: right;">
+                                            <t t-esc="doc.fmt_total(d_tot)"/>
+                                        </td>
+                                    </t>
+                                    <td style="border: 1px solid #444; padding: 4px; text-align: right; background-color: #C00000; font-size: 9px;">
+                                        <t t-esc="doc.fmt_total(data['grand_total_mtd'])"/>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

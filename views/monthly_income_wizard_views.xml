@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Vista Form: Wizard Resumen Mensual de Ingresos (MTD)
+         ══════════════════════════════════════════════════════════════════ -->
+    <record id="view_monthly_income_wizard_form" model="ir.ui.view">
+        <field name="name">mba.monthly.income.wizard.form</field>
+        <field name="model">mba.monthly.income.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Resumen Mensual de Ingresos (MTD)">
+                <group>
+                    <group>
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                    <group>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_print_report"
+                            string="Generar Reporte PDF (Landscape)"
+                            type="object"
+                            class="btn-primary"
+                            icon="fa-print"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción de ventana del wizard -->
+    <record id="action_monthly_income_wizard" model="ir.actions.act_window">
+        <field name="name">Resumen Mensual de Ingresos (MTD)</field>
+        <field name="res_model">mba.monthly.income.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

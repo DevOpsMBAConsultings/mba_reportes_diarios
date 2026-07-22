@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Formato de Papel Horizontal (Landscape) para la Matriz Mensual
+         ══════════════════════════════════════════════════════════════════ -->
+    <record id="paperformat_monthly_income_landscape" model="report.paperformat">
+        <field name="name">A4 Horizontal - Matriz Mensual</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Landscape</field>
+        <field name="margin_top">10</field>
+        <field name="margin_bottom">10</field>
+        <field name="margin_left">8</field>
+        <field name="margin_right">8</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">5</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Acción de Reporte: Resumen Mensual de Ingresos (MTD)
+         ══════════════════════════════════════════════════════════════════ -->
+    <record id="action_report_monthly_income" model="ir.actions.report">
+        <field name="name">Resumen Mensual de Ingresos (MTD)</field>
+        <field name="model">mba.monthly.income.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">mba_reportes_diarios.monthly_income_report_template</field>
+        <field name="report_file">mba_reportes_diarios.monthly_income_report_template</field>
+        <field name="paperformat_id" ref="paperformat_monthly_income_landscape"/>
+        <field name="print_report_name">'Resumen Mensual Ingresos MTD - %s a %s' % (object.date_from, object.date_to)</field>
+    </record>
+
+</odoo>

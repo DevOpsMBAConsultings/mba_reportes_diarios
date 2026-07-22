@@ -39,5 +39,16 @@
             <field name="active" eval="True"/>
         </record>
 
+        <!-- Reporte 4: Resumen Mensual de Ingresos (Month-to-Date) -->
+        <record id="report_template_monthly_income" model="mba.report.template">
+            <field name="name">Resumen Mensual de Ingresos (Month-to-Date)</field>
+            <field name="description">Matriz mensual acumulada (MTD) que muestra la evolución día por día de los ingresos desglosados por Efectivo, Tarjeta Débito/Crédito, Transferencias, Facturas a Crédito y Cobros CxC en formato horizontal.</field>
+            <field name="sequence">30</field>
+            <field name="icon">fa-table</field>
+            <field name="required_module"/>
+            <field name="wizard_action_xmlid">mba_reportes_diarios.action_monthly_income_wizard</field>
+            <field name="active" eval="True"/>
+        </record>
+
     </data>
 </odoo>
