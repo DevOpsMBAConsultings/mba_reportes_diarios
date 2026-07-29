@@ -24,7 +24,7 @@
             <field name="sequence">15</field>
             <field name="icon">fa-money</field>
             <field name="required_module"/>
-            <field name="wizard_action_xmlid">mba_reportes_diarios.action_daily_cxc_wizard</field>
+            <field name="wizard_action_xmlid">mba_reportes_diarios.action_daily_cxc_client</field>
             <field name="active" eval="True"/>
         </record>
 

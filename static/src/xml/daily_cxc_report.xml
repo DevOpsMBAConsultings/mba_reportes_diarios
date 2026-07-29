@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="mba_reportes_diarios.DailyCxcReportTemplate" owl="1">
+        <div class="o_daily_cxc_report">
+            <!-- Header & Filter Bar -->
+            <div class="o_daily_cxc_header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h2 class="report_title">Cobros de Cuentas por Cobrar (CxC)</h2>
+                    <div class="report_subtitle">
+                        Empresa: <strong t-esc="state.data.company_name"/> | Generado: <span t-esc="state.data.time_report"/>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-primary" t-on-click="printPdf">
+                        <i class="fa fa-print me-1"/> Imprimir (PDF)
+                    </button>
+                    <button class="btn btn-secondary" t-on-click="exportXlsx">
+                        <i class="fa fa-file-excel-o me-1"/> Exportar (XLSX)
+                    </button>
+
+                    <div class="input-group input-group-sm ms-3" style="width: auto;">
+                        <span class="input-group-text bg-white"><i class="fa fa-calendar"/> Fecha</span>
+                        <input type="date" class="form-control" t-model="state.date_report" t-on-change="onDateChange"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <t t-if="state.loading">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <div class="mt-2 text-muted">Cargando reporte de cobranza...</div>
+                </div>
+            </t>
+
+            <t t-else="">
+                <!-- KPI Summary Cards -->
+                <div class="o_daily_cxc_kpis">
+                    <div class="o_cxc_kpi_card kpi_success">
+                        <div class="kpi_title">Total Ingresado (CxC)</div>
+                        <div class="kpi_value" t-esc="state.data.formatted_grand_total"/>
+                    </div>
+                    <div class="o_cxc_kpi_card kpi_info">
+                        <div class="kpi_title">Transacciones de Cobro</div>
+                        <div class="kpi_value" t-esc="state.data.total_count"/>
+                    </div>
+                    <div class="o_cxc_kpi_card">
+                        <div class="kpi_title">Facturado a Crédito Hoy</div>
+                        <div class="kpi_value" t-esc="state.data.credit_totals.formatted_amount_total"/>
+                    </div>
+                </div>
+
+                <!-- Table 1: Detalle de Cobros y Abonos a Saldo (Accordion by Method) -->
+                <div class="o_cxc_card">
+                    <div class="o_cxc_card_header">
+                        <h3 class="o_cxc_card_title">Detalle de Cobros y Abonos a Saldo</h3>
+                        <span class="badge badge-method" t-esc="state.data.total_count + ' Transacciones'"/>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table-cxc">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;"></th>
+                                    <th>Nº Recibo / Pago</th>
+                                    <th>Cliente</th>
+                                    <th>Facturas / Concepto</th>
+                                    <th>Diario / Banco</th>
+                                    <th>Referencia</th>
+                                    <th class="text-end">Monto Ingresado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="!state.data.methods || state.data.methods.length === 0">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4 text-muted">
+                                            No se registraron cobros de cuentas por cobrar en esta fecha.
+                                        </td>
+                                    </tr>
+                                </t>
+
+                                <t t-foreach="state.data.methods" t-as="method" t-key="method.name">
+                                    <!-- Accordion Group Header -->
+                                    <tr class="tr-method-header" t-on-click="() => this.toggleMethod(method.name)">
+                                        <td class="text-center">
+                                            <i t-att-class="state.expanded[method.name] ? 'fa fa-caret-down caret-icon' : 'fa fa-caret-right caret-icon'"/>
+                                        </td>
+                                        <td colspan="5">
+                                            <strong t-esc="method.name"/>
+                                            <span class="badge rounded-pill bg-light text-dark ms-2" t-esc="method.count + ' cobros'"/>
+                                        </td>
+                                        <td class="text-amount" t-esc="method.formatted_amount"/>
+                                    </tr>
+
+                                    <!-- Group Details (if expanded) -->
+                                    <t t-if="state.expanded[method.name]">
+                                        <t t-foreach="getDetailsForMethod(method.name)" t-as="d" t-key="d.payment_id">
+                                            <tr class="tr-detail-row">
+                                                <td></td>
+                                                <td>
+                                                    <span class="clickable-link" t-on-click="() => this.openPayment(d.payment_id)">
+                                                        <t t-esc="d.payment_name"/>
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <t t-if="d.partner_id">
+                                                        <span class="clickable-link" t-on-click="() => this.openPartner(d.partner_id)">
+                                                            <t t-esc="d.partner"/>
+                                                        </span>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <t t-esc="d.partner"/>
+                                                    </t>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-light text-dark border" t-esc="d.invoices"/>
+                                                </td>
+                                                <td t-esc="d.journal_name"/>
+                                                <td class="text-muted small" t-esc="d.reference"/>
+                                                <td class="text-amount" t-esc="d.formatted_amount"/>
+                                            </tr>
+                                        </t>
+                                    </t>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr class="total-row">
+                                    <td colspan="6" class="text-end">TOTAL GENERAL COBROS CXC:</td>
+                                    <td class="text-amount text-primary" t-esc="state.data.formatted_grand_total"/>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Table 2: Facturas a Crédito Emitidas en el Día (Sección Informativa) -->
+                <div class="o_cxc_card">
+                    <div class="o_cxc_card_header">
+                        <h3 class="o_cxc_card_title">Facturas a Crédito Emitidas en el Día</h3>
+                        <span class="badge bg-secondary" t-esc="state.data.credit_totals.count + ' Facturas'"/>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table-cxc">
+                            <thead>
+                                <tr>
+                                    <th>Factura</th>
+                                    <th>Cliente</th>
+                                    <th>Término de Pago</th>
+                                    <th>Vencimiento</th>
+                                    <th class="text-end">Monto Facturado</th>
+                                    <th class="text-end">Saldo Pendiente</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="!state.data.credit_invoices || state.data.credit_invoices.length === 0">
+                                    <tr>
+                                        <td colspan="6" class="text-center py-3 text-muted">
+                                            No se emitieron facturas a crédito en esta fecha.
+                                        </td>
+                                    </tr>
+                                </t>
+
+                                <t t-foreach="state.data.credit_invoices" t-as="inv" t-key="inv.invoice_id">
+                                    <tr>
+                                        <td>
+                                            <span class="clickable-link" t-on-click="() => this.openInvoice(inv.invoice_id)">
+                                                <t t-esc="inv.name"/>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <t t-if="inv.partner_id">
+                                                <span class="clickable-link" t-on-click="() => this.openPartner(inv.partner_id)">
+                                                    <t t-esc="inv.partner"/>
+                                                </span>
+                                            </t>
+                                            <t t-else="">
+                                                <t t-esc="inv.partner"/>
+                                            </t>
+                                        </td>
+                                        <td t-esc="inv.payment_term"/>
+                                        <td t-esc="inv.date_due"/>
+                                        <td class="text-amount" t-esc="inv.formatted_amount_total"/>
+                                        <td class="text-amount" t-esc="inv.formatted_amount_residual"/>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr class="total-row">
+                                    <td colspan="4" class="text-end">TOTAL FACTURADO A CRÉDITO:</td>
+                                    <td class="text-amount" t-esc="state.data.credit_totals.formatted_amount_total"/>
+                                    <td class="text-amount" t-esc="state.data.credit_totals.formatted_amount_residual"/>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

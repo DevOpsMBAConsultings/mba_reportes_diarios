@@ -1,0 +1,177 @@
+/* Odoo 18 Dynamic Accounting Reports - Daily CxC CSS */
+
+.o_daily_cxc_report {
+    background-color: #f8f9fa;
+    min-height: 100%;
+    padding: 1.5rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.o_daily_cxc_header {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    margin-bottom: 1.5rem;
+}
+
+.o_daily_cxc_header .report_title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #212529;
+    margin: 0;
+}
+
+.o_daily_cxc_header .report_subtitle {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* KPI Summary Cards */
+.o_daily_cxc_kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.o_cxc_kpi_card {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border-left: 4px solid #714B67;
+}
+
+.o_cxc_kpi_card.kpi_success {
+    border-left-color: #198754;
+}
+
+.o_cxc_kpi_card.kpi_info {
+    border-left-color: #0dcaf0;
+}
+
+.o_cxc_kpi_card .kpi_title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.o_cxc_kpi_card .kpi_value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #212529;
+    margin-top: 0.25rem;
+}
+
+/* Financial Tables */
+.o_cxc_card {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.o_cxc_card_header {
+    padding: 1rem 1.25rem;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.o_cxc_card_title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #017e84;
+    margin: 0;
+}
+
+.table-cxc {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table-cxc th {
+    background-color: #f1f3f5;
+    color: #495057;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table-cxc td {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    color: #212529;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
+}
+
+/* Accordion Row Styling */
+.tr-method-header {
+    background-color: #f8f9fa;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.tr-method-header:hover {
+    background-color: #e9ecef;
+}
+
+.tr-method-header .caret-icon {
+    display: inline-block;
+    width: 1rem;
+    color: #017e84;
+    transition: transform 0.2s ease;
+}
+
+.tr-detail-row {
+    background-color: #ffffff;
+}
+
+.tr-detail-row:hover {
+    background-color: #f8f9fa;
+}
+
+.clickable-link {
+    color: #714B67;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.clickable-link:hover {
+    text-decoration: underline;
+    color: #0056b3;
+}
+
+.text-amount {
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-weight: 600;
+    text-align: right;
+}
+
+.total-row {
+    background-color: #f1f3f5;
+    font-weight: 700;
+    border-top: 2px solid #017e84;
+}
+
+.badge-method {
+    background-color: #e6f4f1;
+    color: #017e84;
+    padding: 0.35em 0.65em;
+    font-size: 0.8em;
+    border-radius: 4px;
+    font-weight: 600;
+}

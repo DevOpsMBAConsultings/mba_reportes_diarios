@@ -246,7 +246,9 @@ class MbaDailyCxcWizard(models.TransientModel):
             partner_label = f"[{partner_ref}] {partner_name}" if partner_ref else partner_name
 
             payment_details.append({
+                'payment_id': p.id,
                 'payment_name': p.name or '',
+                'partner_id': p.partner_id.id if p.partner_id else False,
                 'partner': partner_label,
                 'method_name': method_name,
                 'journal_name': p.journal_id.name if p.journal_id else '',
@@ -268,10 +270,12 @@ class MbaDailyCxcWizard(models.TransientModel):
             partner_label = f"[{partner_ref}] {partner_name}" if partner_ref else partner_name
 
             credit_details.append({
+                'invoice_id': inv.id,
                 'name': inv.name or '',
+                'partner_id': inv.partner_id.id if inv.partner_id else False,
                 'partner': partner_label,
                 'payment_term': inv.invoice_payment_term_id.name or '',
-                'date_due': inv.invoice_date_due,
+                'date_due': str(inv.invoice_date_due) if inv.invoice_date_due else '',
                 'amount_total': inv.amount_total or 0.0,
                 'amount_residual': inv.amount_residual or 0.0,
             })
@@ -297,3 +301,51 @@ class MbaDailyCxcWizard(models.TransientModel):
             'credit_invoices': credit_details,
             'credit_totals': credit_totals,
         }
+
+    # ── API para Cliente Dinámico (OWL Frontend) ────────────────────────────
+
+    @api.model
+    def get_client_report_data(self, date_report=None, company_id=None):
+        """
+        Retorna la información del reporte diario de cobros CxC en un diccionario
+        serializable a JSON para ser consumido asíncronamente por el dashboard OWL.
+        """
+        if not date_report:
+            date_report = fields.Date.context_today(self)
+        if not company_id:
+            company_id = self.env.company.id
+
+        wizard = self.create({
+            'date_report': date_report,
+            'company_id': company_id,
+        })
+        raw_data = wizard._get_report_data()
+
+        # Formatear números para pantalla
+        for m in raw_data['methods']:
+            m['formatted_amount'] = wizard.fmt(m['amount'])
+
+        for d in raw_data['details']:
+            d['formatted_amount'] = wizard.fmt(d['amount'])
+
+        for c in raw_data['credit_invoices']:
+            c['formatted_amount_total'] = wizard.fmt(c['amount_total'])
+            c['formatted_amount_residual'] = wizard.fmt(c['amount_residual'])
+
+        raw_data['credit_totals']['formatted_amount_total'] = wizard.fmt(raw_data['credit_totals']['amount_total'])
+        raw_data['credit_totals']['formatted_amount_residual'] = wizard.fmt(raw_data['credit_totals']['amount_residual'])
+
+        return {
+            'company_name': raw_data['company'].name,
+            'company_id': raw_data['company'].id,
+            'date_report': str(raw_data['date_report']),
+            'time_report': raw_data['time_report'],
+            'methods': raw_data['methods'],
+            'details': raw_data['details'],
+            'grand_total': raw_data['grand_total'],
+            'formatted_grand_total': wizard.fmt(raw_data['grand_total']),
+            'total_count': raw_data['total_count'],
+            'credit_invoices': raw_data['credit_invoices'],
+            'credit_totals': raw_data['credit_totals'],
+        }
+

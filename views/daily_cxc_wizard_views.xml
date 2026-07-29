@@ -27,7 +27,7 @@
         </field>
     </record>
 
-    <!-- Acción de ventana del wizard -->
+    <!-- Acción de ventana del wizard (modal clásico) -->
     <record id="action_daily_cxc_wizard" model="ir.actions.act_window">
         <field name="name">Cobros de Cuentas por Cobrar (CxC)</field>
         <field name="res_model">mba.daily.cxc.wizard</field>
@@ -35,4 +35,18 @@
         <field name="target">new</field>
     </record>
 
+    <!-- Acción de Cliente Dinámico (OWL Frontend - Estilo Cybrosys) -->
+    <record id="action_daily_cxc_client" model="ir.actions.client">
+        <field name="name">Cobros de Cuentas por Cobrar (CxC)</field>
+        <field name="tag">mba_daily_cxc_report</field>
+    </record>
+
+    <!-- Menú Directo: Contabilidad → Reportes → Cobros CxC (Dinámico) -->
+    <menuitem id="menu_daily_cxc_dynamic"
+              name="Cobros CxC (Dinámico)"
+              parent="account.menu_finance_reports"
+              action="action_daily_cxc_client"
+              sequence="98"/>
+
 </odoo>
+
