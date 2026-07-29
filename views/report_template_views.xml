@@ -86,8 +86,11 @@
          Estructura de Menú en el menú desplegable Reportes
          ══════════════════════════════════════════════════════════════════ -->
 
-    <!-- Sección de Cabecera: Contabilidad → Reportes → Reportes Diarios -->
-    <menuitem id="menu_daily_reports_root"
+    <!-- Eliminar menú viejo que tenía la acción asignada directamente -->
+    <delete model="ir.ui.menu" id="menu_daily_reports_root"/>
+
+    <!-- Nueva Sección de Cabecera: Contabilidad → Reportes → Reportes Diarios -->
+    <menuitem id="menu_daily_reports_section"
               name="Reportes Diarios"
               parent="account.menu_finance_reports"
               sequence="90"/>
@@ -95,33 +98,34 @@
     <!-- Submenús de cada reporte -->
     <menuitem id="menu_daily_invoice_report_item"
               name="Cierre de Caja - Facturación"
-              parent="menu_daily_reports_root"
+              parent="menu_daily_reports_section"
               action="action_daily_invoice_wizard"
               sequence="10"/>
 
     <menuitem id="menu_daily_cxc_report_item"
               name="Cobros de Cuentas por Cobrar (CxC)"
-              parent="menu_daily_reports_root"
+              parent="menu_daily_reports_section"
               action="action_daily_cxc_client"
               sequence="20"/>
 
     <menuitem id="menu_daily_pos_report_item"
               name="Cierre de Caja - Punto de Venta (POS)"
-              parent="menu_daily_reports_root"
+              parent="menu_daily_reports_section"
               action="action_daily_pos_wizard"
               sequence="30"/>
 
     <menuitem id="menu_monthly_income_report_item"
               name="Resumen Mensual de Ingresos (MTD)"
-              parent="menu_daily_reports_root"
+              parent="menu_daily_reports_section"
               action="action_monthly_income_wizard"
               sequence="40"/>
 
     <menuitem id="menu_report_template_list_item"
               name="Catálogo de Reportes Diarios"
-              parent="menu_daily_reports_root"
+              parent="menu_daily_reports_section"
               action="action_report_template_list"
               sequence="50"/>
 
 </odoo>
+
 
