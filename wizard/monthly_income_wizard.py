@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, time, timedelta
 from dateutil.relativedelta import relativedelta
 
 
@@ -196,7 +196,58 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
                     else:
                         matrix['ach_directo'][d] += amount
 
-        # 3. Calcular totales acumulados MTD por concepto y por día
+        # 3. Caja del Punto de Venta (POS).
+        #
+        # Regla de negocio de Moto Lider: "caja es POS". El bloque anterior
+        # (account.payment) solo cubre el canal de ventas/distribución; POS
+        # no genera account.payment (pos.payment crea asientos directamente,
+        # ver _create_payment_moves en point_of_sale). Sin este bloque, el
+        # resumen mensual subestimaba el ingreso real: toda la venta de
+        # mostrador quedaba fuera.
+        #
+        # POS es siempre contado (regla ya aplicada en _is_invoice_credit),
+        # así que solo alimenta efectivo/clave/visa_masterd/ach_directo.
+        # Nunca toca cobros_cxc ni facturas_credito.
+        if 'pos.order' in self.env:
+            pos_date_start = datetime.combine(date_from, time.min)
+            pos_date_end = datetime.combine(date_to, time.max)
+            pos_orders = self.env['pos.order'].search([
+                ('date_order', '>=', pos_date_start),
+                ('date_order', '<=', pos_date_end),
+                ('state', 'in', ('paid', 'done', 'invoiced')),
+                ('company_id', '=', self.company_id.id),
+            ])
+
+            for order in pos_orders:
+                # Conversión a la fecha local (context) del asiento POS:
+                # date_order se guarda en UTC: usar la fecha naive tal cual
+                # puede correr el día de una venta hecha en horas de la
+                # noche a la fecha siguiente.
+                d = fields.Datetime.context_timestamp(
+                    self, order.date_order
+                ).date()
+                if d not in days_list:
+                    continue
+
+                for pp in order.payment_ids:
+                    amount = pp.amount or 0.0
+                    method = pp.payment_method_id
+                    mtype = method.type
+                    mname = (method.name or '').lower()
+
+                    if mtype == 'cash':
+                        matrix['efectivo'][d] += amount
+                    elif mtype == 'bank':
+                        if any(kw in mname for kw in CARD_CLAVE):
+                            matrix['clave'][d] += amount
+                        elif any(kw in mname for kw in CARD_CREDIT):
+                            matrix['visa_masterd'][d] += amount
+                        else:
+                            matrix['ach_directo'][d] += amount
+                    # 'pay_later' se ignora: no representa dinero recibido.
+                    # Moto Lider no da de alta ese método en POS.
+
+        # 4. Calcular totales acumulados MTD por concepto y por día
         concept_rows = []
         grand_total_mtd = 0.0
         credit_total_mtd = 0.0
