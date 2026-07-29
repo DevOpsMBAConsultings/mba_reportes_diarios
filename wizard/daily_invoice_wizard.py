@@ -65,10 +65,12 @@ class MbaDailyInvoiceWizard(models.TransientModel):
 
     def _get_payments(self):
         """Obtiene los pagos entrantes publicados del día."""
+        # Odoo 18: los estados de account.payment son
+        # draft | in_process | paid | canceled | rejected
         domain = [
             ('date', '=', self.date_report),
             ('payment_type', '=', 'inbound'),
-            ('state', 'in', ('posted', 'reconciled')),
+            ('state', 'in', ('in_process', 'paid')),
             ('company_id', '=', self.company_id.id),
         ]
         return self.env['account.payment'].search(domain)

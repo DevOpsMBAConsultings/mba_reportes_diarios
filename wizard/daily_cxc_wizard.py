@@ -51,10 +51,14 @@ class MbaDailyCxcWizard(models.TransientModel):
         self.ensure_one()
 
         # 1. Pagos entrantes del día (account.payment)
+        # Odoo 18: los estados de account.payment son
+        # draft | in_process | paid | canceled | rejected
+        # ('posted', 'reconciled') son estados de Odoo <= 16 y no coinciden
+        # con ningún registro (Odoo no lanza error, solo devuelve vacío).
         payments = self.env['account.payment'].search([
             ('date', '=', self.date_report),
             ('payment_type', '=', 'inbound'),
-            ('state', 'in', ('posted', 'reconciled')),
+            ('state', 'in', ('in_process', 'paid')),
             ('company_id', '=', self.company_id.id),
         ], order='partner_id, name asc')
 

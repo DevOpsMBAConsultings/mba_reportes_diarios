@@ -127,11 +127,13 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
                 matrix['facturas_credito'][d] += amount
 
         # 2. Obtener todos los pagos del rango
+        # Odoo 18: los estados de account.payment son
+        # draft | in_process | paid | canceled | rejected
         payments = self.env['account.payment'].search([
             ('date', '>=', date_from),
             ('date', '<=', date_to),
             ('payment_type', '=', 'inbound'),
-            ('state', 'in', ('posted', 'reconciled')),
+            ('state', 'in', ('in_process', 'paid')),
             ('company_id', '=', self.company_id.id),
         ])
 
