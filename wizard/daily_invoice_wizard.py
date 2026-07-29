@@ -267,7 +267,9 @@ class MbaDailyInvoiceWizard(models.TransientModel):
             )
 
             transactions.append({
+                'invoice_id': inv.id,
                 'documento': inv.name or '',
+                'partner_id': inv.partner_id.id if inv.partner_id else False,
                 'descripcion': descripcion,
                 'monto_neto': monto_neto,
                 'impuestos': impuestos,
@@ -295,6 +297,7 @@ class MbaDailyInvoiceWizard(models.TransientModel):
                 key = line.product_id.id
                 if key not in product_data:
                     product_data[key] = {
+                        'product_id': line.product_id.id,
                         'item': line.product_id.default_code or '',
                         'descripcion': line.product_id.name or line.name or '',
                         'cantidad': 0.0,
@@ -356,3 +359,83 @@ class MbaDailyInvoiceWizard(models.TransientModel):
             'products': products,
             'prod_totals': prod_totals,
         }
+
+    # ── API para Cliente Dinámico (OWL Frontend) ────────────────────────────
+
+    @api.model
+    def get_client_report_data(self, date_report=None, journal_ids=None, company_id=None):
+        """
+        Retorna los datos formateados para el Dashboard OWL de Cierre de Facturación.
+        """
+        if not date_report:
+            date_report = fields.Date.context_today(self)
+        if not company_id:
+            company_id = self.env.company.id
+
+        vals = {
+            'date_report': date_report,
+            'company_id': company_id,
+        }
+        if journal_ids:
+            vals['journal_ids'] = [(6, 0, journal_ids)]
+
+        wizard = self.create(vals)
+        raw_data = wizard._get_report_data()
+
+        # Formatear números
+        s = raw_data['summary']
+        s['formatted_total_ventas_brutas'] = wizard.fmt(s['total_ventas_brutas'])
+        s['formatted_total_itbms'] = wizard.fmt(s['total_itbms'])
+        s['formatted_total_contado'] = wizard.fmt(s['total_contado'])
+        s['formatted_total_credito'] = wizard.fmt(s['total_credito'])
+        s['formatted_total_gravable'] = wizard.fmt(s['total_gravable'])
+        s['formatted_total_exento'] = wizard.fmt(s['total_exento'])
+
+        cb = raw_data['contado_breakdown']
+        cb['formatted_efectivo'] = wizard.fmt(cb['efectivo'])
+        cb['formatted_tarjeta'] = wizard.fmt(cb['tarjeta'])
+        cb['formatted_transferencia'] = wizard.fmt(cb['transferencia'])
+        cb['formatted_total'] = wizard.fmt(cb['total'])
+
+        for t in raw_data['transactions']:
+            t['formatted_monto_neto'] = wizard.fmt(t['monto_neto'])
+            t['formatted_impuestos'] = wizard.fmt(t['impuestos'])
+            t['formatted_contado'] = wizard.fmt(t['contado'])
+            t['formatted_credito'] = wizard.fmt(t['credito'])
+
+        txt = raw_data['tx_totals']
+        txt['formatted_monto_neto'] = wizard.fmt(txt['monto_neto'])
+        txt['formatted_impuestos'] = wizard.fmt(txt['impuestos'])
+        txt['formatted_contado'] = wizard.fmt(txt['contado'])
+        txt['formatted_credito'] = wizard.fmt(txt['credito'])
+
+        for p in raw_data['products']:
+            p['formatted_cantidad'] = wizard.fmt_int(p['cantidad'])
+            p['formatted_monto_bruto'] = wizard.fmt(p['monto_bruto'])
+            p['formatted_impuestos'] = wizard.fmt(p['impuestos'])
+            p['formatted_monto_neto'] = wizard.fmt(p['monto_neto'])
+
+        pt = raw_data['prod_totals']
+        pt['formatted_cantidad'] = wizard.fmt_int(pt['cantidad'])
+        pt['formatted_monto_bruto'] = wizard.fmt(pt['monto_bruto'])
+        pt['formatted_impuestos'] = wizard.fmt(pt['impuestos'])
+        pt['formatted_monto_neto'] = wizard.fmt(pt['monto_neto'])
+
+        raw_data['formatted_total_ingresos_general'] = wizard.fmt(raw_data['total_ingresos_general'])
+
+        return {
+            'company_name': raw_data['company'].name,
+            'company_id': raw_data['company'].id,
+            'date_report': str(raw_data['date_report']),
+            'time_report': raw_data['time_report'],
+            'series_name': raw_data['series_name'],
+            'summary': s,
+            'contado_breakdown': cb,
+            'total_ingresos_general': raw_data['total_ingresos_general'],
+            'formatted_total_ingresos_general': raw_data['formatted_total_ingresos_general'],
+            'transactions': raw_data['transactions'],
+            'tx_totals': txt,
+            'products': raw_data['products'],
+            'prod_totals': pt,
+        }
+

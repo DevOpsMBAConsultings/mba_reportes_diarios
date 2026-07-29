@@ -137,9 +137,11 @@ class MbaDailyPosWizard(models.TransientModel):
             pay_method_str = ', '.join(pay_methods) if pay_methods else ''
 
             order_details.append({
+                'order_id': order.id,
                 'name': order.name or '',
+                'partner_id': order.partner_id.id if order.partner_id else False,
                 'partner': order.partner_id.name or _('Cliente Genérico'),
-                'date': order.date_order,
+                'date': fields.Datetime.context_timestamp(self, order.date_order).strftime('%I:%M %p') if order.date_order else '',
                 'amount_untaxed': (order.amount_total or 0.0) - (order.amount_tax or 0.0),
                 'amount_tax': order.amount_tax or 0.0,
                 'amount_total': order.amount_total or 0.0,
@@ -161,6 +163,7 @@ class MbaDailyPosWizard(models.TransientModel):
                 key = line.product_id.id
                 if key not in product_data:
                     product_data[key] = {
+                        'product_id': line.product_id.id,
                         'item': line.product_id.default_code or '',
                         'descripcion': line.product_id.name or '',
                         'cantidad': 0.0,
@@ -205,3 +208,70 @@ class MbaDailyPosWizard(models.TransientModel):
             'products': products,
             'prod_totals': prod_totals,
         }
+
+    # ── API para Cliente Dinámico (OWL Frontend) ────────────────────────────
+
+    @api.model
+    def get_client_report_data(self, date_report=None, company_id=None):
+        """
+        Retorna los datos formateados para el Dashboard OWL de Cierre POS.
+        """
+        if not date_report:
+            date_report = fields.Date.context_today(self)
+        if not company_id:
+            company_id = self.env.company.id
+
+        wizard = self.create({
+            'date_report': date_report,
+            'company_id': company_id,
+        })
+        raw_data = wizard._get_report_data()
+
+        # Formatear números
+        for m in raw_data['payment_methods']:
+            m['formatted_amount'] = wizard.fmt(m['amount'])
+
+        for o in raw_data['orders']:
+            o['formatted_amount_untaxed'] = wizard.fmt(o['amount_untaxed'])
+            o['formatted_amount_tax'] = wizard.fmt(o['amount_tax'])
+            o['formatted_amount_total'] = wizard.fmt(o['amount_total'])
+
+        ot = raw_data['order_totals']
+        ot['formatted_amount_untaxed'] = wizard.fmt(ot['amount_untaxed'])
+        ot['formatted_amount_tax'] = wizard.fmt(ot['amount_tax'])
+        ot['formatted_amount_total'] = wizard.fmt(ot['amount_total'])
+
+        for p in raw_data['products']:
+            p['formatted_cantidad'] = wizard.fmt_int(p['cantidad'])
+            p['formatted_monto_bruto'] = wizard.fmt(p['monto_bruto'])
+            p['formatted_impuestos'] = wizard.fmt(p['impuestos'])
+            p['formatted_monto_neto'] = wizard.fmt(p['monto_neto'])
+
+        pt = raw_data['prod_totals']
+        pt['formatted_cantidad'] = wizard.fmt_int(pt['cantidad'])
+        pt['formatted_monto_bruto'] = wizard.fmt(pt['monto_bruto'])
+        pt['formatted_impuestos'] = wizard.fmt(pt['impuestos'])
+        pt['formatted_monto_neto'] = wizard.fmt(pt['monto_neto'])
+
+        return {
+            'company_name': raw_data['company'].name,
+            'company_id': raw_data['company'].id,
+            'date_report': str(raw_data['date_report']),
+            'time_report': raw_data['time_report'],
+            'sessions': raw_data['sessions'],
+            'total_ventas': raw_data['total_ventas'],
+            'formatted_total_ventas': wizard.fmt(raw_data['total_ventas']),
+            'total_impuestos': raw_data['total_impuestos'],
+            'formatted_total_impuestos': wizard.fmt(raw_data['total_impuestos']),
+            'total_sin_impuesto': raw_data['total_sin_impuesto'],
+            'formatted_total_sin_impuesto': wizard.fmt(raw_data['total_sin_impuesto']),
+            'total_ordenes': raw_data['total_ordenes'],
+            'payment_methods': raw_data['payment_methods'],
+            'total_pagos': raw_data['total_pagos'],
+            'formatted_total_pagos': wizard.fmt(raw_data['total_pagos']),
+            'orders': raw_data['orders'],
+            'order_totals': ot,
+            'products': raw_data['products'],
+            'prod_totals': pt,
+        }
+

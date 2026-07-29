@@ -13,7 +13,7 @@
             <field name="sequence">10</field>
             <field name="icon">fa-file-text-o</field>
             <field name="required_module"/>
-            <field name="wizard_action_xmlid">mba_reportes_diarios.action_daily_invoice_wizard</field>
+            <field name="wizard_action_xmlid">mba_reportes_diarios.action_daily_invoice_client</field>
             <field name="active" eval="True"/>
         </record>
 
@@ -35,7 +35,7 @@
             <field name="sequence">20</field>
             <field name="icon">fa-shopping-cart</field>
             <field name="required_module">point_of_sale</field>
-            <field name="wizard_action_xmlid">mba_reportes_diarios.action_daily_pos_wizard</field>
+            <field name="wizard_action_xmlid">mba_reportes_diarios.action_daily_pos_client</field>
             <field name="active" eval="True"/>
         </record>
 
@@ -46,7 +46,7 @@
             <field name="sequence">30</field>
             <field name="icon">fa-table</field>
             <field name="required_module"/>
-            <field name="wizard_action_xmlid">mba_reportes_diarios.action_monthly_income_wizard</field>
+            <field name="wizard_action_xmlid">mba_reportes_diarios.action_monthly_income_client</field>
             <field name="active" eval="True"/>
         </record>
 

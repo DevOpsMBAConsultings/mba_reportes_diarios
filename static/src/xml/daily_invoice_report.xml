@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="mba_reportes_diarios.DailyInvoiceReportTemplate" owl="1">
+        <div class="o_daily_cxc_report">
+            <!-- Header & Filter Bar -->
+            <div class="o_daily_cxc_header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <h2 class="report_title">Cierre de Caja - Facturación</h2>
+                    <div class="report_subtitle">
+                        Empresa: <strong t-esc="state.data.company_name"/> | Diarios: <span t-esc="state.data.series_name"/> | Generado: <span t-esc="state.data.time_report"/>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-primary" t-on-click="printPdf">
+                        <i class="fa fa-print me-1"/> Imprimir (PDF)
+                    </button>
+                    <button class="btn btn-secondary" t-on-click="exportXlsx">
+                        <i class="fa fa-file-excel-o me-1"/> Exportar (XLSX)
+                    </button>
+
+                    <div class="input-group input-group-sm ms-3" style="width: auto;">
+                        <span class="input-group-text bg-white"><i class="fa fa-calendar"/> Fecha</span>
+                        <input type="date" class="form-control" t-model="state.date_report" t-on-change="onDateChange"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <t t-if="state.loading">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <div class="mt-2 text-muted">Cargando reporte de facturación...</div>
+                </div>
+            </t>
+
+            <t t-else="">
+                <!-- KPI Summary Cards -->
+                <div class="o_daily_cxc_kpis">
+                    <div class="o_cxc_kpi_card kpi_success">
+                        <div class="kpi_title">Ventas Brutas</div>
+                        <div class="kpi_value" t-esc="state.data.summary.formatted_total_ventas_brutas"/>
+                    </div>
+                    <div class="o_cxc_kpi_card kpi_info">
+                        <div class="kpi_title">Total ITBMS (Impuestos)</div>
+                        <div class="kpi_value" t-esc="state.data.summary.formatted_total_itbms"/>
+                    </div>
+                    <div class="o_cxc_kpi_card">
+                        <div class="kpi_title">Total Ingresos Caja (Contado)</div>
+                        <div class="kpi_value" t-esc="state.data.contado_breakdown.formatted_total"/>
+                    </div>
+                    <div class="o_cxc_kpi_card">
+                        <div class="kpi_title">Total Facturas / Transacciones</div>
+                        <div class="kpi_value" t-esc="state.data.summary.total_transacciones"/>
+                    </div>
+                </div>
+
+                <!-- Table 1: Resumen Operativo y Cobros de Caja -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="o_cxc_card">
+                            <div class="o_cxc_card_header">
+                                <h3 class="o_cxc_card_title">Resumen de Ventas y Tipo de Pago</h3>
+                            </div>
+                            <table class="table-cxc">
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Ventas Totales Brutas:</strong></td>
+                                        <td class="text-amount" t-esc="state.data.summary.formatted_total_ventas_brutas"/>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Impuestos (ITBMS):</strong></td>
+                                        <td class="text-amount" t-esc="state.data.summary.formatted_total_itbms"/>
+                                    </tr>
+                                    <tr class="table-light">
+                                        <td><strong>Ventas al Contado:</strong></td>
+                                        <td class="text-amount text-success" t-esc="state.data.summary.formatted_total_contado"/>
+                                    </tr>
+                                    <tr class="table-light">
+                                        <td><strong>Ventas a Crédito (Cartera):</strong></td>
+                                        <td class="text-amount text-warning" t-esc="state.data.summary.formatted_total_credito"/>
+                                    </tr>
+                                    <tr>
+                                        <td>Ventas Gravables (Con ITBMS):</td>
+                                        <td class="text-amount" t-esc="state.data.summary.formatted_total_gravable"/>
+                                    </tr>
+                                    <tr>
+                                        <td>Ventas Exentas:</td>
+                                        <td class="text-amount" t-esc="state.data.summary.formatted_total_exento"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="o_cxc_card">
+                            <div class="o_cxc_card_header">
+                                <h3 class="o_cxc_card_title">Desglose de Cobros de Caja (POS)</h3>
+                            </div>
+                            <table class="table-cxc">
+                                <tbody>
+                                    <tr>
+                                        <td><i class="fa fa-money text-success me-2"/> Efectivo:</td>
+                                        <td class="text-amount" t-esc="state.data.contado_breakdown.formatted_efectivo"/>
+                                    </tr>
+                                    <tr>
+                                        <td><i class="fa fa-credit-card text-primary me-2"/> Tarjeta de Crédito / Débito:</td>
+                                        <td class="text-amount" t-esc="state.data.contado_breakdown.formatted_tarjeta"/>
+                                    </tr>
+                                    <tr>
+                                        <td><i class="fa fa-bank text-info me-2"/> Transferencia / Banco Directo:</td>
+                                        <td class="text-amount" t-esc="state.data.contado_breakdown.formatted_transferencia"/>
+                                    </tr>
+                                    <tr class="total-row">
+                                        <td><strong>TOTAL INGRESOS CAJA:</strong></td>
+                                        <td class="text-amount text-primary" t-esc="state.data.contado_breakdown.formatted_total"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table 2: Transacciones del Día -->
+                <div class="o_cxc_card">
+                    <div class="o_cxc_card_header">
+                        <h3 class="o_cxc_card_title">Transacciones del Día</h3>
+                        <span class="badge bg-secondary" t-esc="state.data.summary.total_transacciones + ' Facturas'"/>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table-cxc">
+                            <thead>
+                                <tr>
+                                    <th>Documento</th>
+                                    <th>Cliente / Descripción</th>
+                                    <th class="text-end">Monto Neto</th>
+                                    <th class="text-end">ITBMS</th>
+                                    <th class="text-end">Contado</th>
+                                    <th class="text-end">Crédito</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="!state.data.transactions || state.data.transactions.length === 0">
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            No se registraron facturas en esta fecha.
+                                        </td>
+                                    </tr>
+                                </t>
+                                <t t-foreach="state.data.transactions" t-as="t" t-key="t.invoice_id">
+                                    <tr>
+                                        <td>
+                                            <span class="clickable-link" t-on-click="() => this.openInvoice(t.invoice_id)">
+                                                <t t-esc="t.documento"/>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <t t-if="t.partner_id">
+                                                <span class="clickable-link" t-on-click="() => this.openPartner(t.partner_id)">
+                                                    <t t-esc="t.descripcion"/>
+                                                </span>
+                                            </t>
+                                            <t t-else="">
+                                                <t t-esc="t.descripcion"/>
+                                            </t>
+                                        </td>
+                                        <td class="text-amount" t-esc="t.formatted_monto_neto"/>
+                                        <td class="text-amount" t-esc="t.formatted_impuestos"/>
+                                        <td class="text-amount text-success" t-esc="t.formatted_contado"/>
+                                        <td class="text-amount text-warning" t-esc="t.formatted_credito"/>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr class="total-row">
+                                    <td colspan="2" class="text-end">TOTALES:</td>
+                                    <td class="text-amount" t-esc="state.data.tx_totals.formatted_monto_neto"/>
+                                    <td class="text-amount" t-esc="state.data.tx_totals.formatted_impuestos"/>
+                                    <td class="text-amount" t-esc="state.data.tx_totals.formatted_contado"/>
+                                    <td class="text-amount" t-esc="state.data.tx_totals.formatted_credito"/>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Table 3: Productos Vendidos en el Día -->
+                <div class="o_cxc_card">
+                    <div class="o_cxc_card_header">
+                        <h3 class="o_cxc_card_title">Productos Vendidos en el Día</h3>
+                        <span class="badge bg-secondary" t-esc="state.data.products.length + ' Productos'"/>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table-cxc">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Descripción</th>
+                                    <th class="text-end">Cantidad</th>
+                                    <th class="text-end">Monto Bruto</th>
+                                    <th class="text-end">ITBMS</th>
+                                    <th class="text-end">Monto Neto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="!state.data.products || state.data.products.length === 0">
+                                    <tr>
+                                        <td colspan="6" class="text-center py-3 text-muted">
+                                            No hay productos vendidos en esta fecha.
+                                        </td>
+                                    </tr>
+                                </t>
+                                <t t-foreach="state.data.products" t-as="p" t-key="p.product_id">
+                                    <tr>
+                                        <td t-esc="p.item"/>
+                                        <td>
+                                            <span class="clickable-link" t-on-click="() => this.openProduct(p.product_id)">
+                                                <t t-esc="p.descripcion"/>
+                                            </span>
+                                        </td>
+                                        <td class="text-amount" t-esc="p.formatted_cantidad"/>
+                                        <td class="text-amount" t-esc="p.formatted_monto_bruto"/>
+                                        <td class="text-amount" t-esc="p.formatted_impuestos"/>
+                                        <td class="text-amount" t-esc="p.formatted_monto_neto"/>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr class="total-row">
+                                    <td colspan="2" class="text-end">TOTALES PRODUCTOS:</td>
+                                    <td class="text-amount" t-esc="state.data.prod_totals.formatted_cantidad"/>
+                                    <td class="text-amount" t-esc="state.data.prod_totals.formatted_monto_bruto"/>
+                                    <td class="text-amount" t-esc="state.data.prod_totals.formatted_impuestos"/>
+                                    <td class="text-amount" t-esc="state.data.prod_totals.formatted_monto_neto"/>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

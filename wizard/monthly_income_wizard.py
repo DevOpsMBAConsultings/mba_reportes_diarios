@@ -294,3 +294,65 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
             # Informativo, fuera del total de ingresos
             'credit_total_mtd': credit_total_mtd,
         }
+
+    # ── API para Cliente Dinámico (OWL Frontend) ────────────────────────────
+
+    @api.model
+    def get_client_report_data(self, date_from=None, date_to=None, company_id=None):
+        """
+        Retorna los datos formateados para el Dashboard OWL de Resumen Mensual (MTD).
+        """
+        if not date_from:
+            date_from = fields.Date.context_today(self).replace(day=1)
+        if not date_to:
+            date_to = fields.Date.context_today(self)
+        if not company_id:
+            company_id = self.env.company.id
+
+        wizard = self.create({
+            'date_from': date_from,
+            'date_to': date_to,
+            'company_id': company_id,
+        })
+        raw_data = wizard._get_report_data()
+
+        # Formatear encabezados de días
+        headers = []
+        for h in raw_data['day_headers']:
+            headers.append({
+                'date': str(h['date']),
+                'label': h['label'],
+                'day_name': h['day_name'],
+            })
+
+        # Formatear filas de conceptos
+        rows = []
+        for r in raw_data['concept_rows']:
+            formatted_vals = [wizard.fmt(v) for v in r['values']]
+            rows.append({
+                'name': r['name'],
+                'values': r['values'],
+                'formatted_values': formatted_vals,
+                'total': r['total'],
+                'formatted_total': wizard.fmt_total(r['total']),
+                'informative': r['informative'],
+            })
+
+        formatted_daily_totals = [wizard.fmt_total(v) for v in raw_data['daily_totals']]
+
+        return {
+            'company_name': raw_data['company'].name,
+            'company_id': raw_data['company'].id,
+            'date_from': str(raw_data['date_from']),
+            'date_to': str(raw_data['date_to']),
+            'time_report': raw_data['time_report'],
+            'day_headers': headers,
+            'concept_rows': rows,
+            'daily_totals': raw_data['daily_totals'],
+            'formatted_daily_totals': formatted_daily_totals,
+            'grand_total_mtd': raw_data['grand_total_mtd'],
+            'formatted_grand_total_mtd': wizard.fmt_total(raw_data['grand_total_mtd']),
+            'credit_total_mtd': raw_data['credit_total_mtd'],
+            'formatted_credit_total_mtd': wizard.fmt_total(raw_data['credit_total_mtd']),
+        }
+

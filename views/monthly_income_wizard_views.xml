@@ -30,7 +30,7 @@
         </field>
     </record>
 
-    <!-- Acción de ventana del wizard -->
+    <!-- Acción de ventana del wizard (modal clásico) -->
     <record id="action_monthly_income_wizard" model="ir.actions.act_window">
         <field name="name">Resumen Mensual de Ingresos (MTD)</field>
         <field name="res_model">mba.monthly.income.wizard</field>
@@ -38,4 +38,11 @@
         <field name="target">new</field>
     </record>
 
+    <!-- Acción de Cliente Dinámico (OWL Frontend) -->
+    <record id="action_monthly_income_client" model="ir.actions.client">
+        <field name="name">Resumen Mensual de Ingresos (MTD)</field>
+        <field name="tag">mba_monthly_income_report</field>
+    </record>
+
 </odoo>
+

@@ -27,7 +27,7 @@
         </field>
     </record>
 
-    <!-- Acción de ventana del wizard -->
+    <!-- Acción de ventana del wizard (modal clásico) -->
     <record id="action_daily_pos_wizard" model="ir.actions.act_window">
         <field name="name">Cierre de Caja - POS</field>
         <field name="res_model">mba.daily.pos.wizard</field>
@@ -35,4 +35,11 @@
         <field name="target">new</field>
     </record>
 
+    <!-- Acción de Cliente Dinámico (OWL Frontend) -->
+    <record id="action_daily_pos_client" model="ir.actions.client">
+        <field name="name">Cierre de Caja - POS</field>
+        <field name="tag">mba_daily_pos_report</field>
+    </record>
+
 </odoo>
+
