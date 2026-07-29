@@ -1,6 +1,6 @@
 {
     "name": "Panamá - Reportes Diarios Cierre de Caja (MBA Consultings)",
-    "version": "18.0.1.0.13",
+    "version": "18.0.1.0.14",
     "category": "Accounting/Localizations",
     "summary": "Reportes diarios agnósticos: Cierre de caja para facturación, cobros CxC, POS y matriz mensual MTD. | MBA Consultings",
     "author": "MBA Consultings, Brooks Gonzalez",
@@ -19,10 +19,13 @@
         "report/daily_pos_report_template.xml",
         "report/monthly_income_report.xml",
         "report/monthly_income_report_template.xml",
+        "report/sales_commission_report.xml",
+        "report/sales_commission_report_template.xml",
         "views/daily_invoice_wizard_views.xml",
         "views/daily_cxc_wizard_views.xml",
         "views/daily_pos_wizard_views.xml",
         "views/monthly_income_wizard_views.xml",
+        "views/sales_commission_wizard_views.xml",
         "views/report_template_views.xml",
         "data/report_template_data.xml"
     ],
@@ -36,11 +39,14 @@
             "mba_reportes_diarios/static/src/xml/daily_pos_report.xml",
             "mba_reportes_diarios/static/src/js/daily_pos_report.js",
             "mba_reportes_diarios/static/src/xml/monthly_income_report.xml",
-            "mba_reportes_diarios/static/src/js/monthly_income_report.js"
+            "mba_reportes_diarios/static/src/js/monthly_income_report.js",
+            "mba_reportes_diarios/static/src/xml/sales_commission_report.xml",
+            "mba_reportes_diarios/static/src/js/sales_commission_report.js"
         ]
     },
     "installable": True,
     "application": False,
 }
+
 
 

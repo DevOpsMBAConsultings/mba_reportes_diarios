@@ -50,5 +50,17 @@
             <field name="active" eval="True"/>
         </record>
 
+        <!-- Reporte 5: Comisiones de Ventas (Pre-Cierre) -->
+        <record id="report_template_sales_commission" model="mba.report.template">
+            <field name="name">Comisiones de Ventas (Pre-Cierre)</field>
+            <field name="description">Auditoría y visibilidad previa de comisiones devengadas por vendedor/agente antes de procesar el pago o la liquidación oficial. Integrado con los módulos de comisiones OCA.</field>
+            <field name="sequence">35</field>
+            <field name="icon">fa-percent</field>
+            <field name="required_module">account_commission_oca</field>
+            <field name="wizard_action_xmlid">mba_reportes_diarios.action_sales_commission_client</field>
+            <field name="active" eval="True"/>
+        </record>
+
     </data>
 </odoo>
+

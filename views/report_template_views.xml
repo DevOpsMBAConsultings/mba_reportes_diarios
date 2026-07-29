@@ -120,6 +120,11 @@
               action="action_monthly_income_client"
               sequence="40"/>
 
+    <menuitem id="menu_sales_commission_report_item"
+              name="Comisiones de Ventas (Pre-Cierre)"
+              parent="menu_daily_reports_section"
+              action="action_sales_commission_client"
+              sequence="45"/>
 
     <menuitem id="menu_report_template_list_item"
               name="Catálogo de Reportes Diarios"
@@ -128,5 +133,6 @@
               sequence="50"/>
 
 </odoo>
+
 
 
