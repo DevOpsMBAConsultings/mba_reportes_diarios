@@ -51,8 +51,26 @@ class MbaDailyInvoiceWizard(models.TransientModel):
 
     # ── Consultas base ──────────────────────────────────────────────────────
 
+    def _is_pos_invoice(self, inv):
+        """
+        Indica si la factura se originó en el Punto de Venta.
+
+        point_of_sale añade 'pos_order_ids' a account.move (One2many hacia
+        pos.order). Acceso defensivo: este módulo solo depende de 'account'.
+        """
+        if 'pos_order_ids' not in inv._fields:
+            return False
+        return bool(inv.pos_order_ids)
+
     def _get_invoices(self):
-        """Obtiene las facturas publicadas del día."""
+        """
+        Facturas publicadas del día originadas en el Punto de Venta.
+
+        Regla de negocio de Moto Lider: el cierre de caja es POS
+        (pos.order -> account.move). El canal de distribución
+        (sale.order -> account.move) no es caja y no entra en este reporte;
+        su cartera se cubre en el reporte de Cobros CxC.
+        """
         domain = [
             ('invoice_date', '=', self.date_report),
             ('move_type', 'in', ('out_invoice', 'out_refund')),
@@ -61,83 +79,70 @@ class MbaDailyInvoiceWizard(models.TransientModel):
         ]
         if self.journal_ids:
             domain.append(('journal_id', 'in', self.journal_ids.ids))
-        return self.env['account.move'].search(domain, order='name asc')
 
-    def _get_payments(self):
-        """Obtiene los pagos entrantes publicados del día."""
-        # Odoo 18: los estados de account.payment son
-        # draft | in_process | paid | canceled | rejected
-        domain = [
-            ('date', '=', self.date_report),
-            ('payment_type', '=', 'inbound'),
-            ('state', 'in', ('in_process', 'paid')),
-            ('company_id', '=', self.company_id.id),
-        ]
-        return self.env['account.payment'].search(domain)
+        invoices = self.env['account.move'].search(domain, order='name asc')
+
+        # Si POS no está instalado no hay nada que acotar.
+        if 'pos_order_ids' not in self.env['account.move']._fields:
+            return invoices
+        return invoices.filtered(lambda i: self._is_pos_invoice(i))
 
     # ── Clasificación de pagos ──────────────────────────────────────────────
 
-    def _classify_payments(self, payments):
-        """
-        Clasifica los pagos del día en:
-        - contado: reconciliados con facturas del mismo día
-        - cxc: reconciliados con facturas de días anteriores (cobros de crédito)
-        """
-        contado = self.env['account.payment']
-        cxc = self.env['account.payment']
-
-        for payment in payments:
-            is_contado = False
-            # Rastrear reconciliación a través de las líneas del asiento
-            receivable_lines = payment.move_id.line_ids.filtered(
-                lambda l: l.account_id.account_type == 'asset_receivable'
-            )
-            for line in receivable_lines:
-                # matched_debit_ids: este pago (crédito) reconciliado contra débitos (facturas)
-                for partial in line.matched_debit_ids:
-                    invoice_move = partial.debit_move_id.move_id
-                    if (invoice_move.is_invoice()
-                            and invoice_move.invoice_date == self.date_report):
-                        is_contado = True
-                        break
-                if is_contado:
-                    break
-
-            if is_contado:
-                contado |= payment
-            else:
-                cxc |= payment
-
-        return contado, cxc
-
-    def _group_payments_by_type(self, payments):
-        """
-        Agrupa pagos por tipo de diario para el desglose:
-        - cash → Efectivo
-        - bank con nombre tipo tarjeta → Tarjeta de Crédito
-        - bank otros → Transferencia
-        """
-        result = {
+    def _empty_breakdown(self):
+        """Desglose de cobros en cero."""
+        return {
             'efectivo': 0.0,
             'tarjeta': 0.0,
             'transferencia': 0.0,
             'voucher_count': 0,
+            'total': 0.0,
         }
+
+    def _group_pos_payments(self, invoices):
+        """
+        Desglosa los cobros de caja a partir de los pagos del POS.
+
+        El POS no genera registros account.payment: pos.payment crea asientos
+        contables directamente (ver pos_payment._create_payment_moves en
+        point_of_sale). Por eso el desglose de caja debe leerse desde
+        pos.payment y no desde account.payment.
+
+        Clasificación por pos.payment.method.type, que Odoo define como
+        cash | bank | pay_later. Dentro de 'bank' se separa tarjeta de
+        transferencia por nombre del método.
+        """
+        result = self._empty_breakdown()
+
+        if 'pos_order_ids' not in self.env['account.move']._fields:
+            return result
+
         CARD_KEYWORDS = (
             'tarjeta', 'card', 'visa', 'master', 'clave',
             'datafast', 'pos terminal', 'débito', 'debito',
         )
-        for p in payments:
-            amount = p.amount or 0.0
-            if p.journal_id.type == 'cash':
-                result['efectivo'] += amount
-            elif p.journal_id.type == 'bank':
-                jname = (p.journal_id.name or '').lower()
-                if any(kw in jname for kw in CARD_KEYWORDS):
-                    result['tarjeta'] += amount
-                    result['voucher_count'] += 1
-                else:
-                    result['transferencia'] += amount
+
+        for inv in invoices:
+            sign = 1 if inv.move_type == 'out_invoice' else -1
+            for order in inv.pos_order_ids:
+                for pp in order.payment_ids:
+                    amount = (pp.amount or 0.0) * sign
+                    method = pp.payment_method_id
+                    mtype = method.type
+                    mname = (method.name or '').lower()
+
+                    if mtype == 'cash':
+                        result['efectivo'] += amount
+                    elif mtype == 'bank':
+                        if any(kw in mname for kw in CARD_KEYWORDS):
+                            result['tarjeta'] += amount
+                            result['voucher_count'] += 1
+                        else:
+                            result['transferencia'] += amount
+                    # 'pay_later' (cuenta cliente) no se contabiliza como
+                    # ingreso de caja: no entró dinero. Moto Lider no da de
+                    # alta ese método, pero se ignora explícitamente por si
+                    # alguien lo habilita.
 
         result['total'] = (
             result['efectivo'] + result['tarjeta'] + result['transferencia']
@@ -148,8 +153,13 @@ class MbaDailyInvoiceWizard(models.TransientModel):
 
     def _is_invoice_credit(self, inv):
         """Determina si una factura es a crédito o contado."""
+        # 0. POS es siempre contado: la caja es venta transaccional, el
+        #    cliente paga y se va. El crédito vive en el canal de ventas.
+        if self._is_pos_invoice(inv):
+            return False
+
         # 1. Si existe el campo DGI (mba_pa_edi)
-        if hasattr(inv, 'dgi_payment_term_type') and inv.dgi_payment_term_type:
+        if 'dgi_payment_term_type' in inv._fields and inv.dgi_payment_term_type:
             return inv.dgi_payment_term_type == 'credito'
 
         # 2. Términos de Pago estándar de Odoo (invoice_payment_term_id)
@@ -174,8 +184,6 @@ class MbaDailyInvoiceWizard(models.TransientModel):
         self.ensure_one()
 
         invoices = self._get_invoices()
-        payments = self._get_payments()
-        contado_payments, cxc_payments = self._classify_payments(payments)
 
         # ── Totales de facturas ─────────────────────────────────────────
         inv_regular = invoices.filtered(lambda i: i.move_type == 'out_invoice')
@@ -219,18 +227,21 @@ class MbaDailyInvoiceWizard(models.TransientModel):
                 else:
                     total_exento += subtotal
 
-        # ── Desglose de pagos ───────────────────────────────────────────
-        contado_breakdown = self._group_payments_by_type(contado_payments)
-        cxc_breakdown = self._group_payments_by_type(cxc_payments)
+        # ── Desglose de cobros de caja (desde pos.payment) ───────────────
+        contado_breakdown = self._group_pos_payments(invoices)
 
         # ── Estadísticas CxC ────────────────────────────────────────────
+        # La caja no genera cartera: en POS el cliente paga y se va. Estas
+        # cifras quedan en cero por diseño y la cartera del canal de ventas
+        # se reporta en "Cobros de Cuentas por Cobrar (CxC)".
+        cxc_breakdown = self._empty_breakdown()
         num_facturas_credito = len(
             inv_credito.filtered(lambda i: i.move_type == 'out_invoice')
         )
-        num_pagos_cxc = len(cxc_payments)
-        monto_pagos_cxc = sum(cxc_payments.mapped('amount'))
+        num_pagos_cxc = 0
+        monto_pagos_cxc = 0.0
 
-        total_ingresos_general = contado_breakdown['total'] + cxc_breakdown['total']
+        total_ingresos_general = contado_breakdown['total']
 
         # ── Tabla de transacciones ──────────────────────────────────────
         transactions = []

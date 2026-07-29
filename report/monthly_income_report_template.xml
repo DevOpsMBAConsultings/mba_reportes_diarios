@@ -80,9 +80,12 @@
                             </thead>
                             <tbody>
                                 <t t-foreach="data['concept_rows']" t-as="row">
-                                    <tr style="page-break-inside: avoid;">
+                                    <tr t-att-style="'page-break-inside: avoid; font-style: italic; color: #666;' if row['informative'] else 'page-break-inside: avoid;'">
                                         <td style="border: 1px solid #ccc; padding: 3px 4px; font-weight: bold; background-color: #F2F2F2;">
                                             <t t-esc="row['name']"/>
+                                            <t t-if="row['informative']">
+                                                <span style="font-weight: normal; font-size: 7px;"> (informativo)</span>
+                                            </t>
                                         </td>
                                         <t t-foreach="row['values']" t-as="val">
                                             <td style="border: 1px solid #ccc; padding: 3px 2px; text-align: right;">
@@ -112,6 +115,13 @@
                                 </tr>
                             </tfoot>
                         </table>
+
+                        <p style="margin-top: 8px; font-size: 8px; font-style: italic; color: #666;">
+                            Las filas marcadas como informativas no forman parte del total de ingresos.
+                            La facturación a crédito emitida en el período suma
+                            <strong><t t-esc="doc.fmt_total(data['credit_total_mtd'])"/></strong>
+                            y se refleja como ingreso en la fila de Cobros CxC cuando el cliente efectivamente paga.
+                        </p>
 
                     </div>
                 </t>

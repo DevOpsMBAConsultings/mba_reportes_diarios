@@ -55,8 +55,23 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
 
     # ── Auxiliar para detectar facturas a crédito ───────────────────────────
 
+    def _is_pos_invoice(self, inv):
+        """
+        Indica si la factura se originó en el Punto de Venta.
+
+        El módulo point_of_sale añade 'pos_order_ids' a account.move. Acceso
+        defensivo: este módulo solo depende de 'account'.
+        """
+        if 'pos_order_ids' not in inv._fields:
+            return False
+        return bool(inv.pos_order_ids)
+
     def _is_invoice_credit(self, inv):
-        if hasattr(inv, 'dgi_payment_term_type') and inv.dgi_payment_term_type:
+        # Regla de negocio: la caja (POS) es siempre contado. El crédito vive
+        # exclusivamente en el canal de ventas para distribución.
+        if self._is_pos_invoice(inv):
+            return False
+        if 'dgi_payment_term_type' in inv._fields and inv.dgi_payment_term_type:
             return inv.dgi_payment_term_type == 'credito'
         term = inv.invoice_payment_term_id
         if term:
@@ -97,13 +112,17 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
             })
 
         # Estructura de conceptos de ingreso
+        # 'informative': la fila se muestra pero NO suma a los totales.
+        # Emitir una factura a crédito no es dinero recibido, y esa misma
+        # plata vuelve a contarse en COBROS CXC cuando efectivamente se cobra.
+        # Sumarla producía un doble conteo en el total general.
         concepts = [
-            {'code': 'efectivo', 'name': 'EFECTIVO'},
-            {'code': 'clave', 'name': 'TARJETA CLAVE (DÉBITO)'},
-            {'code': 'visa_masterd', 'name': 'VISA - MASTERCARD (CRÉDITO)'},
-            {'code': 'ach_directo', 'name': 'ACH / TRANSFERENCIAS DIRECTAS'},
-            {'code': 'facturas_credito', 'name': 'FACTURAS A CRÉDITO (EMITIDAS)'},
-            {'code': 'cobros_cxc', 'name': 'COBROS CXC (RECIBOS / CHEQUES)'},
+            {'code': 'efectivo', 'name': 'EFECTIVO', 'informative': False},
+            {'code': 'clave', 'name': 'TARJETA CLAVE (DÉBITO)', 'informative': False},
+            {'code': 'visa_masterd', 'name': 'VISA - MASTERCARD (CRÉDITO)', 'informative': False},
+            {'code': 'ach_directo', 'name': 'ACH / TRANSFERENCIAS DIRECTAS', 'informative': False},
+            {'code': 'cobros_cxc', 'name': 'COBROS CXC (RECIBOS / CHEQUES)', 'informative': False},
+            {'code': 'facturas_credito', 'name': 'FACTURAS A CRÉDITO (EMITIDAS)', 'informative': True},
         ]
 
         # Matriz de datos: {concept_code: {date: amount}}
@@ -180,10 +199,11 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
         # 3. Calcular totales acumulados MTD por concepto y por día
         concept_rows = []
         grand_total_mtd = 0.0
+        credit_total_mtd = 0.0
 
         for c in concepts:
             row_code = c['code']
-            row_name = c['name']
+            informative = c.get('informative', False)
             daily_values = []
             row_total = 0.0
 
@@ -191,14 +211,20 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
                 val = matrix[row_code][d]
                 daily_values.append(val)
                 row_total += val
-                daily_totals[d] += val
+                # Las filas informativas no alimentan los totales de ingresos.
+                if not informative:
+                    daily_totals[d] += val
 
-            grand_total_mtd += row_total
+            if informative:
+                credit_total_mtd += row_total
+            else:
+                grand_total_mtd += row_total
 
             concept_rows.append({
-                'name': row_name,
+                'name': c['name'],
                 'values': daily_values,
                 'total': row_total,
+                'informative': informative,
             })
 
         daily_totals_list = [daily_totals[d] for d in days_list]
@@ -214,4 +240,6 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
             'concept_rows': concept_rows,
             'daily_totals': daily_totals_list,
             'grand_total_mtd': grand_total_mtd,
+            # Informativo, fuera del total de ingresos
+            'credit_total_mtd': credit_total_mtd,
         }

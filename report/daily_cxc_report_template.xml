@@ -144,6 +144,71 @@
                             </tfoot>
                         </table>
 
+                        <!-- ════════════════════════════════════════════
+                             INFORMATIVO: FACTURACIÓN A CRÉDITO DEL DÍA
+                             No suma a los totales de cobros: emitir una
+                             factura a crédito no es una entrada de dinero.
+                             ════════════════════════════════════════════ -->
+                        <t t-if="data['credit_invoices']">
+                            <h4 style="font-size: 13px; margin-top: 25px; margin-bottom: 4px;">
+                                <strong>Facturas a Crédito Emitidas en el Día</strong>
+                            </h4>
+                            <p style="margin: 0 0 8px 0; font-size: 9px; font-style: italic; color: #666;">
+                                Sección informativa. Estos montos NO forman parte del total de cobros:
+                                corresponden a cartera generada, no a dinero recibido.
+                            </p>
+
+                            <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                                <thead>
+                                    <tr style="background-color: #7F7F7F; color: white;">
+                                        <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Factura</th>
+                                        <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Cliente</th>
+                                        <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Término de Pago</th>
+                                        <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Vencimiento</th>
+                                        <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Monto Facturado</th>
+                                        <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Saldo Pendiente</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="data['credit_invoices']" t-as="ci">
+                                        <tr style="page-break-inside: avoid;">
+                                            <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                                <t t-esc="ci['name']"/>
+                                            </td>
+                                            <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                                <t t-esc="ci['partner']"/>
+                                            </td>
+                                            <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                                <t t-esc="ci['payment_term']"/>
+                                            </td>
+                                            <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                                <t t-esc="ci['date_due']" t-options='{"widget": "date"}'/>
+                                            </td>
+                                            <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                                <t t-esc="doc.fmt(ci['amount_total'])"/>
+                                            </td>
+                                            <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right; font-weight: bold;">
+                                                <t t-esc="doc.fmt(ci['amount_residual'])"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="font-weight: bold; border-top: 2px solid #333; background-color: #F2F2F2;">
+                                        <td colspan="4" style="padding: 5px 6px; text-align: right;">
+                                            TOTAL FACTURADO A CRÉDITO (<t t-esc="data['credit_totals']['count']"/>):
+                                        </td>
+                                        <td style="padding: 5px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(data['credit_totals']['amount_total'])"/>
+                                        </td>
+                                        <td style="padding: 5px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(data['credit_totals']['amount_residual'])"/>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </t>
+
                     </div>
                 </t>
             </t>

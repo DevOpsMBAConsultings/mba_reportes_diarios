@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
-from datetime import datetime, time
+from datetime import datetime
 
 
 class MbaDailyCxcWizard(models.TransientModel):
@@ -42,19 +42,120 @@ class MbaDailyCxcWizard(models.TransientModel):
             value = 0
         return '{:,.0f}'.format(value)
 
+    # ── Clasificación de facturas ───────────────────────────────────────────
+
+    def _is_pos_invoice(self, inv):
+        """
+        Indica si la factura se originó en el Punto de Venta.
+
+        El módulo point_of_sale añade el campo 'pos_order_ids' a account.move
+        (One2many hacia pos.order). Se accede de forma defensiva porque este
+        módulo solo depende de 'account' y POS puede no estar instalado.
+        """
+        if 'pos_order_ids' not in inv._fields:
+            return False
+        return bool(inv.pos_order_ids)
+
+    def _is_invoice_credit(self, inv):
+        """
+        Determina si una factura es a crédito.
+
+        Regla de negocio de Moto Lider: la caja (POS) es siempre transaccional
+        y de contado. El crédito vive exclusivamente en el canal de ventas
+        (sale.order -> account.move) para distribución.
+        """
+        # 1. POS es siempre contado, sin importar el término que traiga.
+        if self._is_pos_invoice(inv):
+            return False
+
+        # 2. Campo DGI (mba_pa_edi) si está disponible.
+        if 'dgi_payment_term_type' in inv._fields and inv.dgi_payment_term_type:
+            return inv.dgi_payment_term_type == 'credito'
+
+        # 3. Términos de pago estándar de Odoo.
+        term = inv.invoice_payment_term_id
+        if term:
+            tname = (term.name or '').lower()
+            if any(kw in tname for kw in ('contado', 'inmediato', 'immediate', '0 día', '0 dia')):
+                return False
+            if any(kw in tname for kw in ('crédito', 'credito', '30', '60', '90', '120', 'día', 'dia')):
+                return True
+            for line in term.line_ids:
+                if getattr(line, 'nb_days', 0) > 0:
+                    return True
+
+        return False
+
+    def _get_reconciled_invoices(self, payment):
+        """
+        Devuelve las facturas conciliadas contra un pago entrante.
+
+        Se recorre la conciliación a través de las líneas por cobrar del
+        asiento del pago (matched_debit_ids: el pago es el crédito y la
+        factura el débito).
+        """
+        invoices = self.env['account.move']
+        receivable_lines = payment.move_id.line_ids.filtered(
+            lambda l: l.account_id.account_type == 'asset_receivable'
+        )
+        for line in receivable_lines:
+            for partial in line.matched_debit_ids:
+                inv_move = partial.debit_move_id.move_id
+                if inv_move and inv_move.is_invoice():
+                    invoices |= inv_move
+        return invoices
+
+    def _classify_journal(self, journal):
+        """Traduce el diario a una etiqueta de método de cobro."""
+        CARD_KEYWORDS = (
+            'tarjeta', 'card', 'visa', 'master', 'clave',
+            'datafast', 'pos terminal', 'débito', 'debito',
+        )
+        if not journal:
+            return _('Otros')
+
+        jname = (journal.name or '').lower()
+        if journal.type == 'cash':
+            return _('Efectivo')
+        if journal.type == 'bank':
+            if any(kw in jname for kw in CARD_KEYWORDS):
+                return _('Tarjeta de Crédito / Débito')
+            return _('Transferencia / Depósito Banco')
+        return journal.name or _('Otros')
+
+    # ── Consultas base ──────────────────────────────────────────────────────
+
+    def _get_credit_invoices(self):
+        """
+        Facturas a crédito emitidas en el día por el canal de ventas.
+
+        Sección informativa: NO suma a los totales de cobros, porque emitir
+        una factura a crédito no representa una entrada de dinero.
+        """
+        invoices = self.env['account.move'].search([
+            ('invoice_date', '=', self.date_report),
+            ('move_type', '=', 'out_invoice'),
+            ('state', '=', 'posted'),
+            ('company_id', '=', self.company_id.id),
+        ], order='name asc')
+        return invoices.filtered(lambda i: self._is_invoice_credit(i))
+
     # ── Datos del reporte ───────────────────────────────────────────────────
 
     def _get_report_data(self):
         """
-        Calcula todos los datos necesarios para el reporte PDF de Cobros CxC.
+        Calcula los datos del reporte PDF de Cobros CxC.
+
+        Alcance (regla de negocio de Moto Lider): este reporte cubre
+        exclusivamente la cartera del canal de ventas (sale.order ->
+        account.move) con término de pago a crédito. La caja del Punto de
+        Venta NO entra aquí: tiene su propio reporte de cierre.
         """
         self.ensure_one()
 
-        # 1. Pagos entrantes del día (account.payment)
-        # Odoo 18: los estados de account.payment son
-        # draft | in_process | paid | canceled | rejected
-        # ('posted', 'reconciled') son estados de Odoo <= 16 y no coinciden
-        # con ningún registro (Odoo no lanza error, solo devuelve vacío).
+        # 1. Pagos entrantes del día.
+        #    Odoo 18: los estados de account.payment son
+        #    draft | in_process | paid | canceled | rejected
         payments = self.env['account.payment'].search([
             ('date', '=', self.date_report),
             ('payment_type', '=', 'inbound'),
@@ -62,31 +163,29 @@ class MbaDailyCxcWizard(models.TransientModel):
             ('company_id', '=', self.company_id.id),
         ], order='partner_id, name asc')
 
-        # 2. Clasificación y detalle por cliente/pago
         payment_details = []
         method_totals = {}
 
-        CARD_KEYWORDS = (
-            'tarjeta', 'card', 'visa', 'master', 'clave',
-            'datafast', 'pos terminal', 'débito', 'debito',
-        )
-
         for p in payments:
-            journal = p.journal_id
-            journal_type = journal.type if journal else ''
-            jname = (journal.name or '').lower()
+            reconciled = self._get_reconciled_invoices(p)
 
-            if journal_type == 'cash':
-                method_name = _('Efectivo')
-            elif journal_type == 'bank':
-                if any(kw in jname for kw in CARD_KEYWORDS):
-                    method_name = _('Tarjeta de Crédito / Débito')
-                else:
-                    method_name = _('Transferencia / Depósito Banco')
+            # Filtro de alcance: solo cartera de ventas a crédito.
+            # Un pago sin factura conciliada es un anticipo o abono a saldo;
+            # se conserva porque POS no genera account.payment, de modo que
+            # todo anticipo proviene por definición del canal de ventas.
+            if reconciled:
+                relevant = reconciled.filtered(
+                    lambda i: self._is_invoice_credit(i)
+                )
+                if not relevant:
+                    continue
+                invoice_str = ', '.join(relevant.mapped('name'))
             else:
-                method_name = journal.name if journal else _('Otros')
+                invoice_str = _('Abono a Saldo / Anticipo')
 
+            method_name = self._classify_journal(p.journal_id)
             amount = p.amount or 0.0
+
             if method_name not in method_totals:
                 method_totals[method_name] = {
                     'name': method_name,
@@ -96,19 +195,6 @@ class MbaDailyCxcWizard(models.TransientModel):
             method_totals[method_name]['amount'] += amount
             method_totals[method_name]['count'] += 1
 
-            # Factura(s) relacionada(s) si están reconciliadas
-            invoices = []
-            receivable_lines = p.move_id.line_ids.filtered(
-                lambda l: l.account_id.account_type == 'asset_receivable'
-            )
-            for line in receivable_lines:
-                for partial in line.matched_debit_ids:
-                    inv_move = partial.debit_move_id.move_id
-                    if inv_move.name and inv_move.name not in invoices:
-                        invoices.append(inv_move.name)
-
-            invoice_str = ', '.join(invoices) if invoices else _('Abono a Saldo / Anticipo')
-
             partner_name = p.partner_id.name or _('Cliente General')
             partner_ref = p.partner_id.ref or p.partner_id.vat or ''
             partner_label = f"[{partner_ref}] {partner_name}" if partner_ref else partner_name
@@ -117,56 +203,38 @@ class MbaDailyCxcWizard(models.TransientModel):
                 'payment_name': p.name or '',
                 'partner': partner_label,
                 'method_name': method_name,
-                'journal_name': journal.name if journal else '',
-                'reference': p.ref or '',
+                'journal_name': p.journal_id.name if p.journal_id else '',
+                'reference': p.memo or '',
                 'invoices': invoice_str,
                 'amount': amount,
             })
 
-        # 3. Cobros / Órdenes a crédito POS (si POS está instalado)
-        pos_credit_details = []
-        if 'pos.order' in self.env:
-            date_start = datetime.combine(self.date_report, time.min)
-            date_end = datetime.combine(self.date_report, time.max)
-            pos_orders = self.env['pos.order'].search([
-                ('date_order', '>=', date_start),
-                ('date_order', '<=', date_end),
-                ('state', 'in', ('paid', 'done', 'invoiced')),
-                ('company_id', '=', self.company_id.id),
-            ])
-            # Filtrar órdenes que tengan líneas de pago marcadas como crédito/cuenta cliente
-            for order in pos_orders:
-                for pp in order.payment_ids:
-                    pm_name = (pp.payment_method_id.name or '').lower()
-                    if 'cuenta' in pm_name or 'crédito' in pm_name or 'credito' in pm_name or 'cxc' in pm_name:
-                        amount = pp.amount or 0.0
-                        method_label = f"POS - {pp.payment_method_id.name}"
-                        if method_label not in method_totals:
-                            method_totals[method_label] = {
-                                'name': method_label,
-                                'amount': 0.0,
-                                'count': 0,
-                            }
-                        method_totals[method_label]['amount'] += amount
-                        method_totals[method_label]['count'] += 1
+        methods_list = sorted(
+            method_totals.values(), key=lambda x: x['amount'], reverse=True
+        )
+        grand_total = sum(d['amount'] for d in payment_details)
 
-                        partner_name = order.partner_id.name or _('Cliente POS')
-                        partner_ref = order.partner_id.ref or order.partner_id.vat or ''
-                        partner_label = f"[{partner_ref}] {partner_name}" if partner_ref else partner_name
+        # 2. Sección informativa: facturas a crédito emitidas hoy.
+        credit_details = []
+        for inv in self._get_credit_invoices():
+            partner_ref = inv.partner_id.ref or inv.partner_id.vat or ''
+            partner_name = inv.partner_id.name or ''
+            partner_label = f"[{partner_ref}] {partner_name}" if partner_ref else partner_name
 
-                        pos_credit_details.append({
-                            'payment_name': order.name or '',
-                            'partner': partner_label,
-                            'method_name': method_label,
-                            'journal_name': pp.payment_method_id.name or 'POS',
-                            'reference': order.pos_reference or '',
-                            'invoices': _('Orden POS a Crédito'),
-                            'amount': amount,
-                        })
+            credit_details.append({
+                'name': inv.name or '',
+                'partner': partner_label,
+                'payment_term': inv.invoice_payment_term_id.name or '',
+                'date_due': inv.invoice_date_due,
+                'amount_total': inv.amount_total or 0.0,
+                'amount_residual': inv.amount_residual or 0.0,
+            })
 
-        all_details = payment_details + pos_credit_details
-        methods_list = sorted(method_totals.values(), key=lambda x: x['amount'], reverse=True)
-        grand_total = sum(d['amount'] for d in all_details)
+        credit_totals = {
+            'amount_total': sum(c['amount_total'] for c in credit_details),
+            'amount_residual': sum(c['amount_residual'] for c in credit_details),
+            'count': len(credit_details),
+        }
 
         return {
             'company': self.company_id,
@@ -174,8 +242,12 @@ class MbaDailyCxcWizard(models.TransientModel):
             'time_report': fields.Datetime.context_timestamp(
                 self, datetime.now()
             ).strftime('%I:%M %p'),
+            # Cobros efectivamente recibidos
             'methods': methods_list,
-            'details': all_details,
+            'details': payment_details,
             'grand_total': grand_total,
-            'total_count': len(all_details),
+            'total_count': len(payment_details),
+            # Informativo: facturación a crédito del día (no suma a cobros)
+            'credit_invoices': credit_details,
+            'credit_totals': credit_totals,
         }
