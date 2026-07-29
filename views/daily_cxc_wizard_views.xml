@@ -41,12 +41,6 @@
         <field name="tag">mba_daily_cxc_report</field>
     </record>
 
-    <!-- Menú Directo: Contabilidad → Reportes → Cobros CxC (Dinámico) -->
-    <menuitem id="menu_daily_cxc_dynamic"
-              name="Cobros CxC (Dinámico)"
-              parent="account.menu_finance_reports"
-              action="action_daily_cxc_client"
-              sequence="98"/>
-
 </odoo>
+
 
