@@ -63,7 +63,7 @@ class MbaDailyCxcWizard(models.TransientModel):
 
         # 3. Inspección por palabras clave en memo o referencia (típicas del POS en Odoo)
         memo = (payment.memo or '').lower()
-        ref = (payment.ref or '').lower()
+        move_ref = (payment.move_id.ref or '').lower() if payment.move_id else ''
         pos_keywords = (
             'punto de venta',
             'point of sale',
@@ -73,7 +73,7 @@ class MbaDailyCxcWizard(models.TransientModel):
             'combinar los pagos',
             'cierre de pdv',
         )
-        if any(kw in memo for kw in pos_keywords) or any(kw in ref for kw in pos_keywords):
+        if any(kw in memo for kw in pos_keywords) or any(kw in move_ref for kw in pos_keywords):
             return True
 
         # 4. Si el pago pertenece a clientes genéricos de mostrador/POS ("Consumidor Final",
