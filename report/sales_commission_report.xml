@@ -10,6 +10,5 @@
         <field name="print_report_name">'Comisiones_Ventas_%s' % (object.date_from)</field>
         <field name="binding_model_id" ref="model_mba_sales_commission_wizard"/>
         <field name="binding_type">report</field>
-        <field name="paperformat_id" ref="account.paperformat_euro"/>
     </record>
 </odoo>
