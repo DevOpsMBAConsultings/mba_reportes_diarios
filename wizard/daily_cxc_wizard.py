@@ -42,7 +42,47 @@ class MbaDailyCxcWizard(models.TransientModel):
             value = 0
         return '{:,.0f}'.format(value)
 
-    # ── Clasificación de facturas ───────────────────────────────────────────
+    # ── Clasificación de facturas y pagos ───────────────────────────────────
+
+    def _is_pos_payment(self, payment):
+        """
+        Determina si un pago (account.payment) proviene del Punto de Venta (POS).
+
+        El POS de Odoo crea registros en account.payment al cerrar sesiones o procesar
+        métodos bancarios/transferencia (ej. 'Combine los pagos con...'). Estos cobros
+        pertenecen a caja transaccional y NO deben aparecer en Cobros de Cuentas por Cobrar (CxC).
+        """
+        # 1. Campos específicos de POS en account.payment
+        for field_name in ('pos_payment_method_id', 'pos_session_id', 'pos_order_id'):
+            if field_name in payment._fields and payment[field_name]:
+                return True
+
+        # 2. Relación desde el asiento contable (account.move) hacia pos.order
+        if 'pos_order_ids' in payment.move_id._fields and payment.move_id.pos_order_ids:
+            return True
+
+        # 3. Inspección por palabras clave en memo o referencia (típicas del POS en Odoo)
+        memo = (payment.memo or '').lower()
+        ref = (payment.ref or '').lower()
+        pos_keywords = (
+            'punto de venta',
+            'point of sale',
+            'pos/',
+            'combine los pagos',
+            'combine payments',
+            'combinar los pagos',
+            'cierre de pdv',
+        )
+        if any(kw in memo for kw in pos_keywords) or any(kw in ref for kw in pos_keywords):
+            return True
+
+        # 4. Si el pago pertenece a clientes genéricos de mostrador/POS ("Consumidor Final",
+        # "Cliente General") y no es de un cliente de crédito registrado.
+        partner_name = (payment.partner_id.name or '').lower()
+        if any(kw in partner_name for kw in ('consumidor final', 'cliente general', 'publico en general')):
+            return True
+
+        return False
 
     def _is_pos_invoice(self, inv):
         """
@@ -55,6 +95,7 @@ class MbaDailyCxcWizard(models.TransientModel):
         if 'pos_order_ids' not in inv._fields:
             return False
         return bool(inv.pos_order_ids)
+
 
     def _is_invoice_credit(self, inv):
         """
@@ -167,7 +208,12 @@ class MbaDailyCxcWizard(models.TransientModel):
         method_totals = {}
 
         for p in payments:
+            # Excluir cualquier pago originado en el Punto de Venta o de clientes de mostrador
+            if self._is_pos_payment(p):
+                continue
+
             reconciled = self._get_reconciled_invoices(p)
+
 
             # Filtro de alcance: solo cartera de ventas a crédito.
             # Un pago sin factura conciliada es un anticipo o abono a saldo;
