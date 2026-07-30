@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="mba_reportes_diarios.DailyCxcReportTemplate" owl="1">
-        <div class="o_daily_cxc_report">
+        <div class="o_mba_report">
             <!-- Header & Filter Bar -->
-            <div class="o_daily_cxc_header d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="o_mba_report_header d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <div>
-                    <h2 class="report_title">Cobros de Cuentas por Cobrar (CxC)</h2>
-                    <div class="report_subtitle">
+                    <h2 class="o_mba_report_title">Cobros de Cuentas por Cobrar (CxC)</h2>
+                    <div class="o_mba_report_subtitle">
                         Empresa: <strong t-esc="state.data.company_name"/> | Generado: <span t-esc="state.data.time_report"/>
                     </div>
                 </div>
@@ -38,29 +38,29 @@
 
             <t t-else="">
                 <!-- KPI Summary Cards -->
-                <div class="o_daily_cxc_kpis">
-                    <div class="o_cxc_kpi_card kpi_success">
-                        <div class="kpi_title">Total Ingresado (CxC)</div>
-                        <div class="kpi_value" t-esc="state.data.formatted_grand_total"/>
+                <div class="o_mba_report_kpis">
+                    <div class="o_mba_report_kpi o_mba_kpi_success">
+                        <div class="o_mba_kpi_label">Total Ingresado (CxC)</div>
+                        <div class="o_mba_kpi_value" t-esc="state.data.formatted_grand_total"/>
                     </div>
-                    <div class="o_cxc_kpi_card kpi_info">
-                        <div class="kpi_title">Transacciones de Cobro</div>
-                        <div class="kpi_value" t-esc="state.data.total_count"/>
+                    <div class="o_mba_report_kpi o_mba_kpi_info">
+                        <div class="o_mba_kpi_label">Transacciones de Cobro</div>
+                        <div class="o_mba_kpi_value" t-esc="state.data.total_count"/>
                     </div>
-                    <div class="o_cxc_kpi_card">
-                        <div class="kpi_title">Facturado a Crédito Hoy</div>
-                        <div class="kpi_value" t-esc="state.data.credit_totals.formatted_amount_total"/>
+                    <div class="o_mba_report_kpi">
+                        <div class="o_mba_kpi_label">Facturado a Crédito Hoy</div>
+                        <div class="o_mba_kpi_value" t-esc="state.data.credit_totals.formatted_amount_total"/>
                     </div>
                 </div>
 
                 <!-- Table 1: Detalle de Cobros y Abonos a Saldo (Accordion by Method) -->
-                <div class="o_cxc_card">
-                    <div class="o_cxc_card_header">
-                        <h3 class="o_cxc_card_title">Detalle de Cobros y Abonos a Saldo</h3>
-                        <span class="badge badge-method" t-esc="state.data.total_count + ' Transacciones'"/>
+                <div class="o_mba_report_section">
+                    <div class="o_mba_report_section_header">
+                        <h3 class="o_mba_report_section_title">Detalle de Cobros y Abonos a Saldo</h3>
+                        <span class="badge o_mba_badge" t-esc="state.data.total_count + ' Transacciones'"/>
                     </div>
                     <div class="table-responsive">
-                        <table class="table-cxc">
+                        <table class="o_mba_report_table">
                             <thead>
                                 <tr>
                                     <th style="width: 40px;"></th>
@@ -83,30 +83,30 @@
 
                                 <t t-foreach="state.data.methods" t-as="method" t-key="method.name">
                                     <!-- Accordion Group Header -->
-                                    <tr class="tr-method-header" t-on-click="() => this.toggleMethod(method.name)">
+                                    <tr class="o_mba_group_row" t-on-click="() => this.toggleMethod(method.name)">
                                         <td class="text-center">
-                                            <i t-att-class="state.expanded[method.name] ? 'fa fa-caret-down caret-icon' : 'fa fa-caret-right caret-icon'"/>
+                                            <i t-att-class="state.expanded[method.name] ? 'fa fa-caret-down o_mba_caret' : 'fa fa-caret-right o_mba_caret'"/>
                                         </td>
                                         <td colspan="5">
                                             <strong t-esc="method.name"/>
                                             <span class="badge rounded-pill bg-light text-dark ms-2" t-esc="method.count + ' cobros'"/>
                                         </td>
-                                        <td class="text-amount" t-esc="method.formatted_amount"/>
+                                        <td class="o_mba_amount" t-esc="method.formatted_amount"/>
                                     </tr>
 
                                     <!-- Group Details (if expanded) -->
                                     <t t-if="state.expanded[method.name]">
                                         <t t-foreach="getDetailsForMethod(method.name)" t-as="d" t-key="d.payment_id">
-                                            <tr class="tr-detail-row">
+                                            <tr class="o_mba_detail_row">
                                                 <td></td>
                                                 <td>
-                                                    <span class="clickable-link" t-on-click="() => this.openPayment(d.payment_id)">
+                                                    <span class="o_mba_link" t-on-click="() => this.openPayment(d.payment_id)">
                                                         <t t-esc="d.payment_name"/>
                                                     </span>
                                                 </td>
                                                 <td>
                                                     <t t-if="d.partner_id">
-                                                        <span class="clickable-link" t-on-click="() => this.openPartner(d.partner_id)">
+                                                        <span class="o_mba_link" t-on-click="() => this.openPartner(d.partner_id)">
                                                             <t t-esc="d.partner"/>
                                                         </span>
                                                     </t>
@@ -119,16 +119,16 @@
                                                 </td>
                                                 <td t-esc="d.journal_name"/>
                                                 <td class="text-muted small" t-esc="d.reference"/>
-                                                <td class="text-amount" t-esc="d.formatted_amount"/>
+                                                <td class="o_mba_amount" t-esc="d.formatted_amount"/>
                                             </tr>
                                         </t>
                                     </t>
                                 </t>
                             </tbody>
                             <tfoot>
-                                <tr class="total-row">
+                                <tr class="o_mba_total_row">
                                     <td colspan="6" class="text-end">TOTAL GENERAL COBROS CXC:</td>
-                                    <td class="text-amount text-primary" t-esc="state.data.formatted_grand_total"/>
+                                    <td class="o_mba_amount text-primary" t-esc="state.data.formatted_grand_total"/>
                                 </tr>
                             </tfoot>
                         </table>
@@ -136,13 +136,13 @@
                 </div>
 
                 <!-- Table 2: Facturas a Crédito Emitidas en el Día (Sección Informativa) -->
-                <div class="o_cxc_card">
-                    <div class="o_cxc_card_header">
-                        <h3 class="o_cxc_card_title">Facturas a Crédito Emitidas en el Día</h3>
+                <div class="o_mba_report_section">
+                    <div class="o_mba_report_section_header">
+                        <h3 class="o_mba_report_section_title">Facturas a Crédito Emitidas en el Día</h3>
                         <span class="badge bg-secondary" t-esc="state.data.credit_totals.count + ' Facturas'"/>
                     </div>
                     <div class="table-responsive">
-                        <table class="table-cxc">
+                        <table class="o_mba_report_table">
                             <thead>
                                 <tr>
                                     <th>Factura</th>
@@ -165,13 +165,13 @@
                                 <t t-foreach="state.data.credit_invoices" t-as="inv" t-key="inv.invoice_id">
                                     <tr>
                                         <td>
-                                            <span class="clickable-link" t-on-click="() => this.openInvoice(inv.invoice_id)">
+                                            <span class="o_mba_link" t-on-click="() => this.openInvoice(inv.invoice_id)">
                                                 <t t-esc="inv.name"/>
                                             </span>
                                         </td>
                                         <td>
                                             <t t-if="inv.partner_id">
-                                                <span class="clickable-link" t-on-click="() => this.openPartner(inv.partner_id)">
+                                                <span class="o_mba_link" t-on-click="() => this.openPartner(inv.partner_id)">
                                                     <t t-esc="inv.partner"/>
                                                 </span>
                                             </t>
@@ -181,16 +181,16 @@
                                         </td>
                                         <td t-esc="inv.payment_term"/>
                                         <td t-esc="inv.date_due"/>
-                                        <td class="text-amount" t-esc="inv.formatted_amount_total"/>
-                                        <td class="text-amount" t-esc="inv.formatted_amount_residual"/>
+                                        <td class="o_mba_amount" t-esc="inv.formatted_amount_total"/>
+                                        <td class="o_mba_amount" t-esc="inv.formatted_amount_residual"/>
                                     </tr>
                                 </t>
                             </tbody>
                             <tfoot>
-                                <tr class="total-row">
+                                <tr class="o_mba_total_row">
                                     <td colspan="4" class="text-end">TOTAL FACTURADO A CRÉDITO:</td>
-                                    <td class="text-amount" t-esc="state.data.credit_totals.formatted_amount_total"/>
-                                    <td class="text-amount" t-esc="state.data.credit_totals.formatted_amount_residual"/>
+                                    <td class="o_mba_amount" t-esc="state.data.credit_totals.formatted_amount_total"/>
+                                    <td class="o_mba_amount" t-esc="state.data.credit_totals.formatted_amount_residual"/>
                                 </tr>
                             </tfoot>
                         </table>

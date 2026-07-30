@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="mba_reportes_diarios.DailyPosReportTemplate" owl="1">
-        <div class="o_daily_cxc_report">
+        <div class="o_mba_report">
             <!-- Header & Filter Bar -->
-            <div class="o_daily_cxc_header d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="o_mba_report_header d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <div>
-                    <h2 class="report_title">Cierre de Caja - Punto de Venta (POS)</h2>
-                    <div class="report_subtitle">
+                    <h2 class="o_mba_report_title">Cierre de Caja - Punto de Venta (POS)</h2>
+                    <div class="o_mba_report_subtitle">
                         Empresa: <strong t-esc="state.data.company_name"/> | Generado: <span t-esc="state.data.time_report"/>
                     </div>
                 </div>
@@ -38,33 +38,33 @@
 
             <t t-else="">
                 <!-- KPI Summary Cards -->
-                <div class="o_daily_cxc_kpis">
-                    <div class="o_cxc_kpi_card kpi_success">
-                        <div class="kpi_title">Total Ventas POS</div>
-                        <div class="kpi_value" t-esc="state.data.formatted_total_ventas"/>
+                <div class="o_mba_report_kpis">
+                    <div class="o_mba_report_kpi o_mba_kpi_success">
+                        <div class="o_mba_kpi_label">Total Ventas POS</div>
+                        <div class="o_mba_kpi_value" t-esc="state.data.formatted_total_ventas"/>
                     </div>
-                    <div class="o_cxc_kpi_card kpi_info">
-                        <div class="kpi_title">Total Órdenes POS</div>
-                        <div class="kpi_value" t-esc="state.data.total_ordenes"/>
+                    <div class="o_mba_report_kpi o_mba_kpi_info">
+                        <div class="o_mba_kpi_label">Total Órdenes POS</div>
+                        <div class="o_mba_kpi_value" t-esc="state.data.total_ordenes"/>
                     </div>
-                    <div class="o_cxc_kpi_card">
-                        <div class="kpi_title">Total ITBMS (Impuestos)</div>
-                        <div class="kpi_value" t-esc="state.data.formatted_total_impuestos"/>
+                    <div class="o_mba_report_kpi">
+                        <div class="o_mba_kpi_label">Total ITBMS (Impuestos)</div>
+                        <div class="o_mba_kpi_value" t-esc="state.data.formatted_total_impuestos"/>
                     </div>
-                    <div class="o_cxc_kpi_card">
-                        <div class="kpi_title">Total Recaudado por Métodos</div>
-                        <div class="kpi_value" t-esc="state.data.formatted_total_pagos"/>
+                    <div class="o_mba_report_kpi">
+                        <div class="o_mba_kpi_label">Total Recaudado por Métodos</div>
+                        <div class="o_mba_kpi_value" t-esc="state.data.formatted_total_pagos"/>
                     </div>
                 </div>
 
                 <!-- Table 1: Sesiones POS y Métodos de Pago -->
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="o_cxc_card">
-                            <div class="o_cxc_card_header">
-                                <h3 class="o_cxc_card_title">Sesiones del Día</h3>
+                        <div class="o_mba_report_section">
+                            <div class="o_mba_report_section_header">
+                                <h3 class="o_mba_report_section_title">Sesiones del Día</h3>
                             </div>
-                            <table class="table-cxc">
+                            <table class="o_mba_report_table">
                                 <thead>
                                     <tr>
                                         <th>Sesión</th>
@@ -95,11 +95,11 @@
                     </div>
 
                     <div class="col-md-6">
-                        <div class="o_cxc_card">
-                            <div class="o_cxc_card_header">
-                                <h3 class="o_cxc_card_title">Desglose por Métodos de Pago POS</h3>
+                        <div class="o_mba_report_section">
+                            <div class="o_mba_report_section_header">
+                                <h3 class="o_mba_report_section_title">Desglose por Métodos de Pago POS</h3>
                             </div>
-                            <table class="table-cxc">
+                            <table class="o_mba_report_table">
                                 <thead>
                                     <tr>
                                         <th>Método de Pago</th>
@@ -117,14 +117,14 @@
                                         <tr>
                                             <td class="fw-bold" t-esc="pm.name"/>
                                             <td class="text-end" t-esc="pm.count"/>
-                                            <td class="text-amount" t-esc="pm.formatted_amount"/>
+                                            <td class="o_mba_amount" t-esc="pm.formatted_amount"/>
                                         </tr>
                                     </t>
                                 </tbody>
                                 <tfoot>
-                                    <tr class="total-row">
+                                    <tr class="o_mba_total_row">
                                         <td colspan="2" class="text-end">TOTAL RECAUDADO:</td>
-                                        <td class="text-amount text-primary" t-esc="state.data.formatted_total_pagos"/>
+                                        <td class="o_mba_amount text-primary" t-esc="state.data.formatted_total_pagos"/>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -133,13 +133,13 @@
                 </div>
 
                 <!-- Table 2: Detalle de Órdenes POS -->
-                <div class="o_cxc_card">
-                    <div class="o_cxc_card_header">
-                        <h3 class="o_cxc_card_title">Órdenes POS del Día</h3>
+                <div class="o_mba_report_section">
+                    <div class="o_mba_report_section_header">
+                        <h3 class="o_mba_report_section_title">Órdenes POS del Día</h3>
                         <span class="badge bg-secondary" t-esc="state.data.total_ordenes + ' Órdenes'"/>
                     </div>
                     <div class="table-responsive">
-                        <table class="table-cxc">
+                        <table class="o_mba_report_table">
                             <thead>
                                 <tr>
                                     <th>Orden</th>
@@ -160,13 +160,13 @@
                                 <t t-foreach="state.data.orders" t-as="o" t-key="o.order_id">
                                     <tr>
                                         <td>
-                                            <span class="clickable-link" t-on-click="() => this.openOrder(o.order_id)">
+                                            <span class="o_mba_link" t-on-click="() => this.openOrder(o.order_id)">
                                                 <t t-esc="o.name"/>
                                             </span>
                                         </td>
                                         <td>
                                             <t t-if="o.partner_id">
-                                                <span class="clickable-link" t-on-click="() => this.openPartner(o.partner_id)">
+                                                <span class="o_mba_link" t-on-click="() => this.openPartner(o.partner_id)">
                                                     <t t-esc="o.partner"/>
                                                 </span>
                                             </t>
@@ -176,18 +176,18 @@
                                         </td>
                                         <td t-esc="o.date"/>
                                         <td><span class="badge bg-light text-dark border" t-esc="o.payment_method"/></td>
-                                        <td class="text-amount" t-esc="o.formatted_amount_untaxed"/>
-                                        <td class="text-amount" t-esc="o.formatted_amount_tax"/>
-                                        <td class="text-amount fw-bold" t-esc="o.formatted_amount_total"/>
+                                        <td class="o_mba_amount" t-esc="o.formatted_amount_untaxed"/>
+                                        <td class="o_mba_amount" t-esc="o.formatted_amount_tax"/>
+                                        <td class="o_mba_amount fw-bold" t-esc="o.formatted_amount_total"/>
                                     </tr>
                                 </t>
                             </tbody>
                             <tfoot>
-                                <tr class="total-row">
+                                <tr class="o_mba_total_row">
                                     <td colspan="4" class="text-end">TOTALES ÓRDENES:</td>
-                                    <td class="text-amount" t-esc="state.data.order_totals.formatted_amount_untaxed"/>
-                                    <td class="text-amount" t-esc="state.data.order_totals.formatted_amount_tax"/>
-                                    <td class="text-amount text-primary" t-esc="state.data.order_totals.formatted_amount_total"/>
+                                    <td class="o_mba_amount" t-esc="state.data.order_totals.formatted_amount_untaxed"/>
+                                    <td class="o_mba_amount" t-esc="state.data.order_totals.formatted_amount_tax"/>
+                                    <td class="o_mba_amount text-primary" t-esc="state.data.order_totals.formatted_amount_total"/>
                                 </tr>
                             </tfoot>
                         </table>
@@ -195,13 +195,13 @@
                 </div>
 
                 <!-- Table 3: Productos Vendidos en POS -->
-                <div class="o_cxc_card">
-                    <div class="o_cxc_card_header">
-                        <h3 class="o_cxc_card_title">Productos Vendidos en el POS</h3>
+                <div class="o_mba_report_section">
+                    <div class="o_mba_report_section_header">
+                        <h3 class="o_mba_report_section_title">Productos Vendidos en el POS</h3>
                         <span class="badge bg-secondary" t-esc="state.data.products.length + ' Productos'"/>
                     </div>
                     <div class="table-responsive">
-                        <table class="table-cxc">
+                        <table class="o_mba_report_table">
                             <thead>
                                 <tr>
                                     <th>Código</th>
@@ -222,24 +222,24 @@
                                     <tr>
                                         <td t-esc="p.item"/>
                                         <td>
-                                            <span class="clickable-link" t-on-click="() => this.openProduct(p.product_id)">
+                                            <span class="o_mba_link" t-on-click="() => this.openProduct(p.product_id)">
                                                 <t t-esc="p.descripcion"/>
                                             </span>
                                         </td>
-                                        <td class="text-amount" t-esc="p.formatted_cantidad"/>
-                                        <td class="text-amount" t-esc="p.formatted_monto_bruto"/>
-                                        <td class="text-amount" t-esc="p.formatted_impuestos"/>
-                                        <td class="text-amount" t-esc="p.formatted_monto_neto"/>
+                                        <td class="o_mba_amount" t-esc="p.formatted_cantidad"/>
+                                        <td class="o_mba_amount" t-esc="p.formatted_monto_bruto"/>
+                                        <td class="o_mba_amount" t-esc="p.formatted_impuestos"/>
+                                        <td class="o_mba_amount" t-esc="p.formatted_monto_neto"/>
                                     </tr>
                                 </t>
                             </tbody>
                             <tfoot>
-                                <tr class="total-row">
+                                <tr class="o_mba_total_row">
                                     <td colspan="2" class="text-end">TOTALES PRODUCTOS:</td>
-                                    <td class="text-amount" t-esc="state.data.prod_totals.formatted_cantidad"/>
-                                    <td class="text-amount" t-esc="state.data.prod_totals.formatted_monto_bruto"/>
-                                    <td class="text-amount" t-esc="state.data.prod_totals.formatted_impuestos"/>
-                                    <td class="text-amount" t-esc="state.data.prod_totals.formatted_monto_neto"/>
+                                    <td class="o_mba_amount" t-esc="state.data.prod_totals.formatted_cantidad"/>
+                                    <td class="o_mba_amount" t-esc="state.data.prod_totals.formatted_monto_bruto"/>
+                                    <td class="o_mba_amount" t-esc="state.data.prod_totals.formatted_impuestos"/>
+                                    <td class="o_mba_amount" t-esc="state.data.prod_totals.formatted_monto_neto"/>
                                 </tr>
                             </tfoot>
                         </table>

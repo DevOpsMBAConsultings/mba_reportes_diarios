@@ -1,26 +1,29 @@
 ///
 /// Estilos compartidos de los reportes diarios (MBA Consultings)
 ///
-/// FASE A del refactor (ver REFACTOR_UI.md).
+/// FASES A y B del refactor completadas (ver REFACTOR_UI.md).
 ///
-/// Esta fase NO cambia el diseño. Solo:
-///   1. Migra de .css a .scss para poder usar las variables de Odoo.
-///   2. Sustituye los hex hardcodeados por sus variables $o-* equivalentes.
-///   3. Introduce el prefijo o_mba_*, manteniendo las clases viejas como alias.
+/// Ninguna de las dos cambia el diseño. Lo hecho hasta aqui:
+///   A1. Migrar de .css a .scss para poder usar las variables de Odoo.
+///   A2. Sustituir los hex hardcodeados por sus variables $o-* equivalentes.
+///   A3. Eliminar el font-family redundante (re-declaraba $o-system-fonts).
+///   B1. Renombrar las 21 clases al prefijo o_mba_* en las 5 plantillas.
+///   B2. Eliminar los alias legacy. Resuelto el riesgo de colision de nombres.
 ///
 /// Las variables $o-* vienen del bundle web._assets_primary_variables, que
 /// web.assets_backend ya incluye antes de este archivo. No hay que importar nada.
 ///
-/// Los selectores marcados con "LEGACY" se eliminan en la fase B, cuando las
-/// plantillas XML pasen a usar los nombres nuevos.
+/// PENDIENTE (fase C, cambio visual): densidad, quitar sombras y border-radius,
+/// jerarquia por peso en vez de uppercase, regimen del acento teal, y sustituir
+/// el monospace de .o_mba_amount por font-variant-numeric: tabular-nums.
+/// Los tres hex que quedan literales (#f1f3f5, #e6f4f1, #0056b3) se resuelven ahi.
 ///
 
 // ============================================================================
 // Contenedor principal
 // ============================================================================
 
-.o_mba_report,
-.o_daily_cxc_report {                                   // LEGACY
+.o_mba_report {
     background-color: $o-gray-100;
     padding: 1.5rem;
 
@@ -39,24 +42,21 @@
 // Cabecera
 // ============================================================================
 
-.o_mba_report_header,
-.o_daily_cxc_header {                                   // LEGACY
+.o_mba_report_header {
     background-color: $o-view-background-color;
     border-radius: 8px;
     padding: 1rem 1.5rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     margin-bottom: 1.5rem;
 
-    .o_mba_report_title,
-    .report_title {                                     // LEGACY
+    .o_mba_report_title {
         font-size: 1.5rem;
         font-weight: 700;
         color: $o-gray-900;
         margin: 0;
     }
 
-    .o_mba_report_subtitle,
-    .report_subtitle {                                  // LEGACY
+    .o_mba_report_subtitle {
         font-size: 0.875rem;
         color: $o-gray-600;
     }
@@ -66,16 +66,14 @@
 // Tarjetas KPI
 // ============================================================================
 
-.o_mba_report_kpis,
-.o_daily_cxc_kpis {                                     // LEGACY
+.o_mba_report_kpis {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1rem;
     margin-bottom: 1.5rem;
 }
 
-.o_mba_report_kpi,
-.o_cxc_kpi_card {                                       // LEGACY
+.o_mba_report_kpi {
     background: $o-view-background-color;
     border-radius: 8px;
     padding: 1rem 1.25rem;
@@ -86,22 +84,19 @@
     // Community. $o-brand-primary resuelve a #71639e en CE y a #714B67 en EE.
     border-left: 4px solid $o-brand-primary;
 
-    &.o_mba_kpi_success,
-    &.kpi_success {                                     // LEGACY
+    &.o_mba_kpi_success {
         // CORRECCION INTENCIONAL: antes #198754, que es el verde de
         // Bootstrap 5, no el de Odoo. $o-success es #28a745.
         border-left-color: $o-success;
     }
 
-    &.o_mba_kpi_info,
-    &.kpi_info {                                        // LEGACY
+    &.o_mba_kpi_info {
         // CORRECCION INTENCIONAL: antes #0dcaf0, cian de Bootstrap 5.
         // $o-info es #17a2b8.
         border-left-color: $o-info;
     }
 
-    .o_mba_kpi_label,
-    .kpi_title {                                        // LEGACY
+    .o_mba_kpi_label {
         font-size: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -109,8 +104,7 @@
         color: $o-gray-600;
     }
 
-    .o_mba_kpi_value,
-    .kpi_value {                                        // LEGACY
+    .o_mba_kpi_value {
         font-size: 1.5rem;
         font-weight: 700;
         color: $o-gray-900;
@@ -122,8 +116,7 @@
 // Secciones con tabla
 // ============================================================================
 
-.o_mba_report_section,
-.o_cxc_card {                                           // LEGACY
+.o_mba_report_section {
     background: $o-view-background-color;
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -134,8 +127,7 @@
     overflow: hidden;
 }
 
-.o_mba_report_section_header,
-.o_cxc_card_header {                                    // LEGACY
+.o_mba_report_section_header {
     padding: 1rem 1.25rem;
     background-color: $o-view-background-color;
     border-bottom: 1px solid $o-gray-200;
@@ -144,8 +136,7 @@
     align-items: center;
 }
 
-.o_mba_report_section_title,
-.o_cxc_card_title {                                     // LEGACY
+.o_mba_report_section_title {
     font-size: 1.1rem;
     font-weight: 700;
     color: $o-enterprise-action-color;
@@ -156,8 +147,7 @@
 // Tabla
 // ============================================================================
 
-.o_mba_report_table,
-.table-cxc {                                            // LEGACY
+.o_mba_report_table {
     width: 100%;
     margin-bottom: 0;
 
@@ -191,8 +181,7 @@
 // Filas de acordeon
 // ============================================================================
 
-.o_mba_group_row,
-.tr-method-header {                                     // LEGACY
+.o_mba_group_row {
     background-color: $o-gray-100;
     font-weight: 600;
     transition: background-color 0.15s ease-in-out;
@@ -204,8 +193,7 @@
         background-color: $o-gray-200;
     }
 
-    .o_mba_caret,
-    .caret-icon {                                       // LEGACY
+    .o_mba_caret {
         display: inline-block;
         width: 1rem;
         color: $o-enterprise-action-color;
@@ -213,8 +201,7 @@
     }
 }
 
-.o_mba_detail_row,
-.tr-detail-row {                                        // LEGACY
+.o_mba_detail_row {
     background-color: $o-view-background-color;
 
     &:hover {
@@ -226,8 +213,7 @@
 // Utilidades
 // ============================================================================
 
-.o_mba_link,
-.clickable-link {                                       // LEGACY
+.o_mba_link {
     color: $o-brand-primary;                            // antes #714B67, ver nota arriba
     font-weight: 600;
     cursor: pointer;
@@ -243,8 +229,7 @@
     }
 }
 
-.o_mba_amount,
-.text-amount {                                          // LEGACY
+.o_mba_amount {
     // Mismo stack que tenia literal; $o-font-family-monospace lo define.
     // En la fase C se sustituye por font-variant-numeric: tabular-nums (§3.5).
     font-family: $o-font-family-monospace;
@@ -252,15 +237,13 @@
     text-align: right;
 }
 
-.o_mba_total_row,
-.total-row {                                            // LEGACY
+.o_mba_total_row {
     background-color: #f1f3f5;                          // sin equivalente, ver nota en th
     font-weight: 700;
     border-top: 2px solid $o-enterprise-action-color;
 }
 
-.o_mba_badge,
-.badge-method {                                         // LEGACY
+.o_mba_badge {
     // #e6f4f1 es un tinte del teal elegido a mano; no es un mix() exacto de
     // $o-enterprise-action-color con blanco, asi que se conserva literal para
     // no mover el pixel. Se deriva con mix() en la fase C.
