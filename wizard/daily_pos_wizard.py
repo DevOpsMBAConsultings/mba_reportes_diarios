@@ -55,11 +55,60 @@ class MbaDailyPosWizard(models.TransientModel):
             value = 0
         return '{:,.0f}'.format(value)
 
+    # ── Ventas fuera de caja (módulo de Ventas / facturación directa) ───────
+
+    def _get_sale_invoices(self):
+        """
+        Facturas del día que NO se originaron en el Punto de Venta.
+
+        Particion sin solape: el POS aporta pos.order y esto aporta las
+        account.move que no tienen pos_order_ids. Una venta de caja facturada
+        existe en los dos modelos, y si se sumaran ambos se contaria dos veces;
+        por eso aqui se excluyen explicitamente.
+
+        Acceso defensivo a pos_order_ids: el modulo solo depende de 'account'.
+        """
+        domain = [
+            ('invoice_date', '=', self.date_report),
+            ('move_type', 'in', ('out_invoice', 'out_refund')),
+            ('state', '=', 'posted'),
+            ('company_id', '=', self.company_id.id),
+        ]
+        invoices = self.env['account.move'].search(domain, order='name asc')
+
+        if 'pos_order_ids' not in self.env['account.move']._fields:
+            return invoices
+        return invoices.filtered(lambda i: not i.pos_order_ids)
+
+    def _invoice_payment_label(self, invoice):
+        """
+        Metodo de pago de una factura de ventas.
+
+        Si esta conciliada con pagos, se usa el diario de esos pagos. Si no,
+        es una venta a credito y no entro a caja hoy.
+        """
+        if 'matched_payment_ids' in invoice._fields and invoice.matched_payment_ids:
+            names = []
+            for pay in invoice.matched_payment_ids:
+                name = pay.journal_id.name or ''
+                if name and name not in names:
+                    names.append(name)
+            if names:
+                return ', '.join(names)
+        if invoice.payment_state in ('paid', 'in_payment'):
+            return _('Cobrada')
+        return _('Crédito')
+
     # ── Datos del reporte ───────────────────────────────────────────────────
 
     def _get_report_data(self):
         """
-        Calcula todos los datos necesarios para el reporte PDF de POS.
+        Calcula todos los datos necesarios para el reporte PDF.
+
+        Incluye las ventas de caja (pos.order) y las ventas facturadas fuera
+        de caja (account.move sin pos_order_ids), en las tres secciones:
+        detalle de ordenes, productos vendidos y desglose por metodo de pago.
+
         Accede a modelos POS de forma dinámica (sin dependencia dura).
         """
         self.ensure_one()
@@ -95,11 +144,33 @@ class MbaDailyPosWizard(models.TransientModel):
                 'stop': session.stop_at,
             })
 
-        # ── Totales generales ───────────────────────────────────────────
-        total_ventas = sum(orders.mapped('amount_total'))
-        total_impuestos = sum(orders.mapped('amount_tax'))
+        # ── Facturas de venta fuera de caja ─────────────────────────────
+        invoices = self._get_sale_invoices()
+
+        # ── Totales generales (caja + ventas) ───────────────────────────
+        # Las notas de credito (out_refund) restan.
+        inv_total = sum(
+            (i.amount_total if i.move_type == 'out_invoice' else -i.amount_total)
+            for i in invoices
+        )
+        inv_tax = sum(
+            (i.amount_tax if i.move_type == 'out_invoice' else -i.amount_tax)
+            for i in invoices
+        )
+
+        total_ventas_pos = sum(orders.mapped('amount_total'))
+        total_impuestos_pos = sum(orders.mapped('amount_tax'))
+
+        total_ventas = total_ventas_pos + inv_total
+        total_impuestos = total_impuestos_pos + inv_tax
         total_sin_impuesto = total_ventas - total_impuestos
-        total_ordenes = len(orders)
+        total_ordenes = len(orders) + len(invoices)
+
+        # Desglose por canal, para que el cajero pueda cuadrar su arqueo
+        # aunque el reporte ahora incluya ventas que no pasaron por caja.
+        total_ventas_ventas = inv_total
+        total_ordenes_pos = len(orders)
+        total_ordenes_ventas = len(invoices)
 
         # ── Desglose por método de pago POS ─────────────────────────────
         payment_breakdown = {}
@@ -118,6 +189,19 @@ class MbaDailyPosWizard(models.TransientModel):
                     }
                 payment_breakdown[method_name]['amount'] += pp.amount or 0.0
                 payment_breakdown[method_name]['count'] += 1
+
+        # ── Desglose de las ventas fuera de caja ────────────────────────
+        for inv in invoices:
+            method_name = self._invoice_payment_label(inv)
+            sign = 1 if inv.move_type == 'out_invoice' else -1
+            if method_name not in payment_breakdown:
+                payment_breakdown[method_name] = {
+                    'name': method_name,
+                    'amount': 0.0,
+                    'count': 0,
+                }
+            payment_breakdown[method_name]['amount'] += sign * (inv.amount_total or 0.0)
+            payment_breakdown[method_name]['count'] += 1
 
         payment_methods = sorted(
             payment_breakdown.values(),
@@ -138,6 +222,8 @@ class MbaDailyPosWizard(models.TransientModel):
 
             order_details.append({
                 'order_id': order.id,
+                'res_model': 'pos.order',
+                'origin': 'POS',
                 'name': order.name or '',
                 'partner_id': order.partner_id.id if order.partner_id else False,
                 'partner': order.partner_id.name or _('Cliente Genérico'),
@@ -147,6 +233,27 @@ class MbaDailyPosWizard(models.TransientModel):
                 'amount_total': order.amount_total or 0.0,
                 'payment_method': pay_method_str,
             })
+
+        # ── Detalle de las ventas fuera de caja ─────────────────────────
+        for inv in invoices:
+            sign = 1 if inv.move_type == 'out_invoice' else -1
+            order_details.append({
+                'order_id': inv.id,
+                'res_model': 'account.move',
+                'origin': 'Ventas',
+                'name': inv.name or '',
+                'partner_id': inv.partner_id.id if inv.partner_id else False,
+                'partner': inv.partner_id.name or _('Sin cliente'),
+                'date': fields.Datetime.context_timestamp(
+                    self, inv.create_date
+                ).strftime('%I:%M %p') if inv.create_date else '',
+                'amount_untaxed': sign * (inv.amount_untaxed or 0.0),
+                'amount_tax': sign * (inv.amount_tax or 0.0),
+                'amount_total': sign * (inv.amount_total or 0.0),
+                'payment_method': self._invoice_payment_label(inv),
+            })
+
+        order_details.sort(key=lambda o: (o['origin'], o['name']))
 
         order_totals = {
             'amount_untaxed': sum(o['amount_untaxed'] for o in order_details),
@@ -178,6 +285,30 @@ class MbaDailyPosWizard(models.TransientModel):
                 product_data[key]['impuestos'] += (total - subtotal)
                 product_data[key]['monto_neto'] += total
 
+        # ── Productos de las ventas fuera de caja ───────────────────────
+        for inv in invoices:
+            sign = 1 if inv.move_type == 'out_invoice' else -1
+            for line in inv.invoice_line_ids:
+                if not line.product_id or line.display_type:
+                    continue
+                key = line.product_id.id
+                if key not in product_data:
+                    product_data[key] = {
+                        'product_id': line.product_id.id,
+                        'item': line.product_id.default_code or '',
+                        'descripcion': line.product_id.name or '',
+                        'cantidad': 0.0,
+                        'monto_bruto': 0.0,
+                        'impuestos': 0.0,
+                        'monto_neto': 0.0,
+                    }
+                subtotal = line.price_subtotal or 0.0
+                total = line.price_total or 0.0
+                product_data[key]['cantidad'] += sign * (line.quantity or 0.0)
+                product_data[key]['monto_bruto'] += sign * subtotal
+                product_data[key]['impuestos'] += sign * (total - subtotal)
+                product_data[key]['monto_neto'] += sign * total
+
         products = sorted(product_data.values(), key=lambda p: p['descripcion'])
         prod_totals = {
             'cantidad': sum(p['cantidad'] for p in products),
@@ -198,6 +329,11 @@ class MbaDailyPosWizard(models.TransientModel):
             'total_impuestos': total_impuestos,
             'total_sin_impuesto': total_sin_impuesto,
             'total_ordenes': total_ordenes,
+            # Desglose por canal
+            'total_ventas_pos': total_ventas_pos,
+            'total_ventas_ventas': total_ventas_ventas,
+            'total_ordenes_pos': total_ordenes_pos,
+            'total_ordenes_ventas': total_ordenes_ventas,
             # Pagos
             'payment_methods': payment_methods,
             'total_pagos': total_pagos,
@@ -266,6 +402,12 @@ class MbaDailyPosWizard(models.TransientModel):
             'total_sin_impuesto': raw_data['total_sin_impuesto'],
             'formatted_total_sin_impuesto': wizard.fmt(raw_data['total_sin_impuesto']),
             'total_ordenes': raw_data['total_ordenes'],
+            'total_ventas_pos': raw_data['total_ventas_pos'],
+            'formatted_total_ventas_pos': wizard.fmt(raw_data['total_ventas_pos']),
+            'total_ventas_ventas': raw_data['total_ventas_ventas'],
+            'formatted_total_ventas_ventas': wizard.fmt(raw_data['total_ventas_ventas']),
+            'total_ordenes_pos': raw_data['total_ordenes_pos'],
+            'total_ordenes_ventas': raw_data['total_ordenes_ventas'],
             'payment_methods': raw_data['payment_methods'],
             'total_pagos': raw_data['total_pagos'],
             'formatted_total_pagos': wizard.fmt(raw_data['total_pagos']),

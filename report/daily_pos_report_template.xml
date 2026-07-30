@@ -41,7 +41,7 @@
                              TÍTULO
                              ════════════════════════════════════════════ -->
                         <h4 style="font-size: 14px; margin-top: 15px; margin-bottom: 5px;">
-                            <strong>Cierre de Caja - Punto de Venta</strong>
+                            <strong>Cierre Diario de Ventas</strong>
                         </h4>
                         <p style="margin: 2px 0 15px 0;">
                             Fecha : <t t-esc="doc.date_report" t-options='{"widget": "date"}'/>
@@ -88,7 +88,7 @@
                              RESUMEN DE VENTAS POS
                              ════════════════════════════════════════════ -->
                         <p style="margin-bottom: 8px;">
-                            <strong><u>RESUMEN DE VENTAS POS</u></strong>
+                            <strong><u>RESUMEN DE VENTAS DEL DÍA</u></strong>
                         </p>
 
                         <table style="width: 100%; margin-bottom: 15px;">
@@ -101,6 +101,17 @@
                                 <td style="width: 25%;">Total Ventas :</td>
                                 <td style="width: 20%; text-align: right; font-weight: bold;">
                                     <t t-esc="doc.fmt(data['total_ventas'])"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>&#160;&#160;&#160;de Caja (POS) :</td>
+                                <td style="text-align: right;">
+                                    <t t-esc="doc.fmt(data['total_ventas_pos'])"/>
+                                </td>
+                                <td/>
+                                <td>&#160;&#160;&#160;de Ventas :</td>
+                                <td style="text-align: right;">
+                                    <t t-esc="doc.fmt(data['total_ventas_ventas'])"/>
                                 </td>
                             </tr>
                             <tr>
@@ -168,6 +179,7 @@
                         <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
                             <thead>
                                 <tr style="background-color: #2E7D32; color: white;">
+                                    <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Origen</th>
                                     <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Orden</th>
                                     <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Cliente</th>
                                     <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Método Pago</th>
@@ -179,6 +191,9 @@
                             <tbody>
                                 <t t-foreach="data['orders']" t-as="order">
                                     <tr style="page-break-inside: avoid;">
+                                        <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                            <t t-esc="order['origin']"/>
+                                        </td>
                                         <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
                                             <t t-esc="order['name']"/>
                                         </td>
@@ -202,7 +217,7 @@
                             </tbody>
                             <tfoot>
                                 <tr style="font-weight: bold; border-top: 2px solid #333;">
-                                    <td colspan="3" style="padding: 4px 6px;"/>
+                                    <td colspan="4" style="padding: 4px 6px;"/>
                                     <td style="padding: 4px 6px; text-align: right;">
                                         <t t-esc="doc.fmt(data['order_totals']['amount_untaxed'])"/>
                                     </td>
