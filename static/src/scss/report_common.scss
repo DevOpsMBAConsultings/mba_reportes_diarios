@@ -1,22 +1,22 @@
 ///
 /// Estilos compartidos de los reportes diarios (MBA Consultings)
 ///
-/// FASES A y B del refactor completadas (ver REFACTOR_UI.md).
+/// FASES A, B y C del refactor completadas (ver REFACTOR_UI.md).
 ///
-/// Ninguna de las dos cambia el diseño. Lo hecho hasta aqui:
-///   A1. Migrar de .css a .scss para poder usar las variables de Odoo.
-///   A2. Sustituir los hex hardcodeados por sus variables $o-* equivalentes.
-///   A3. Eliminar el font-family redundante (re-declaraba $o-system-fonts).
-///   B1. Renombrar las 21 clases al prefijo o_mba_* en las 5 plantillas.
-///   B2. Eliminar los alias legacy. Resuelto el riesgo de colision de nombres.
+///   A. Migrar a .scss y sustituir los hex por variables $o-*.
+///   B. Renombrar las 21 clases al prefijo o_mba_*.
+///   C. Alinear el lenguaje visual con Odoo nativo (ESTE es el cambio visible).
 ///
 /// Las variables $o-* vienen del bundle web._assets_primary_variables, que
 /// web.assets_backend ya incluye antes de este archivo. No hay que importar nada.
 ///
-/// PENDIENTE (fase C, cambio visual): densidad, quitar sombras y border-radius,
-/// jerarquia por peso en vez de uppercase, regimen del acento teal, y sustituir
-/// el monospace de .o_mba_amount por font-variant-numeric: tabular-nums.
-/// Los tres hex que quedan literales (#f1f3f5, #e6f4f1, #0056b3) se resuelven ahi.
+/// Criterio de la fase C: Odoo backend es plano y denso. Bandas horizontales
+/// separadas por hairlines, no tarjetas flotantes. La jerarquia la marca el peso
+/// de la fuente, no el color ni la decoracion. El acento se reserva para lo
+/// accionable.
+///
+/// Un solo acento: $o-enterprise-action-color (el teal de accion de Odoo), y solo
+/// en links, carets y estados. $o-brand-primary ya no se usa de forma decorativa.
 ///
 
 // ============================================================================
@@ -24,18 +24,19 @@
 // ============================================================================
 
 .o_mba_report {
-    background-color: $o-gray-100;
-    padding: 1.5rem;
+    // Fondo blanco de vista. El gris ($o-webclient-background-color) lo aplica
+    // Odoo por fuera; repetirlo aqui duplicaba el efecto.
+    background-color: $o-view-background-color;
+
+    // Sin padding: cada banda aporta el suyo, como en las vistas nativas.
+    padding: 0;
 
     // NO TOCAR — fix de scroll vertical, commit cc7a683 (v18.0.1.0.17).
     // Sin estas tres propiedades el contenido no scrollea dentro del
-    // client action. Parecen decoración y no lo son.
+    // client action. Parecen decoracion y no lo son.
     height: 100%;
     min-height: 100%;
     overflow-y: auto;
-
-    // El font-family que había aquí era una re-declaración literal de
-    // $o-system-fonts, que Odoo ya aplica al body. Eliminado por redundante.
 }
 
 // ============================================================================
@@ -43,72 +44,67 @@
 // ============================================================================
 
 .o_mba_report_header {
-    background-color: $o-view-background-color;
-    border-radius: 8px;
-    padding: 1rem 1.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    margin-bottom: 1.5rem;
+    // Banda, no tarjeta: sin box-shadow, sin border-radius, sin margin.
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid $o-gray-300;
 
     .o_mba_report_title {
-        font-size: 1.5rem;
-        font-weight: 700;
+        // 14px medium. El titulo de vista en Odoo es modesto; los 1.5rem/700
+        // anteriores competian con el breadcrumb del webclient.
+        font-size: $o-font-size-base;
+        font-weight: $o-font-weight-medium;
         color: $o-gray-900;
         margin: 0;
     }
 
     .o_mba_report_subtitle {
-        font-size: 0.875rem;
+        font-size: $o-font-size-base-smaller;
         color: $o-gray-600;
     }
 }
 
 // ============================================================================
-// Tarjetas KPI
+// KPIs
 // ============================================================================
 
 .o_mba_report_kpis {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+    // Fila de cifras dentro de una banda, no un grid de tarjetas.
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid $o-gray-300;
 }
 
 .o_mba_report_kpi {
-    background: $o-view-background-color;
-    border-radius: 8px;
-    padding: 1rem 1.25rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-
-    // CORRECCION INTENCIONAL: antes #714B67 hardcodeado, que es
-    // $o-enterprise-color. Forzaba el morado Enterprise sobre instancias
-    // Community. $o-brand-primary resuelve a #71639e en CE y a #714B67 en EE.
-    border-left: 4px solid $o-brand-primary;
-
-    &.o_mba_kpi_success {
-        // CORRECCION INTENCIONAL: antes #198754, que es el verde de
-        // Bootstrap 5, no el de Odoo. $o-success es #28a745.
-        border-left-color: $o-success;
-    }
-
-    &.o_mba_kpi_info {
-        // CORRECCION INTENCIONAL: antes #0dcaf0, cian de Bootstrap 5.
-        // $o-info es #17a2b8.
-        border-left-color: $o-info;
-    }
+    // Sin fondo, sin sombra, sin radius y sin el border-left de 4px.
+    // La cifra se sostiene sola.
 
     .o_mba_kpi_label {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-weight: 600;
+        // Sin uppercase ni letter-spacing: era la firma mas reconocible del
+        // estilo anterior. El gris ya la distingue del valor.
+        font-size: $o-font-size-base-smaller;
+        font-weight: $o-font-weight-normal;
         color: $o-gray-600;
     }
 
     .o_mba_kpi_value {
-        font-size: 1.5rem;
-        font-weight: 700;
+        // 1.25rem es una eleccion deliberada: Odoo no define variable para
+        // cifras destacadas, y $o-font-size-base (14px) se queda corto aqui.
+        font-size: 1.25rem;
+        font-weight: $o-font-weight-medium;
         color: $o-gray-900;
-        margin-top: 0.25rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    // El color semantico pasa del borde decorativo a la cifra, que es lo que
+    // el usuario lee.
+    &.o_mba_kpi_success .o_mba_kpi_value {
+        color: $o-success;
+    }
+
+    &.o_mba_kpi_info .o_mba_kpi_value {
+        color: $o-info;
     }
 }
 
@@ -117,29 +113,23 @@
 // ============================================================================
 
 .o_mba_report_section {
-    background: $o-view-background-color;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    margin-bottom: 1.5rem;
-
-    // Recorta la tabla al border-radius. Si en la fase C se quita el radius,
-    // esta linea se puede quitar tambien.
-    overflow: hidden;
+    // Banda. Sin fondo propio, sin sombra, sin radius.
+    // Al no haber radius, el overflow: hidden que recortaba la tabla sobra.
+    border-bottom: 1px solid $o-gray-300;
 }
 
 .o_mba_report_section_header {
-    padding: 1rem 1.25rem;
-    background-color: $o-view-background-color;
-    border-bottom: 1px solid $o-gray-200;
+    padding: 0.5rem 1rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .o_mba_report_section_title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: $o-enterprise-action-color;
+    // El titulo deja de llevar el acento: el color se reserva para lo accionable.
+    font-size: $o-font-size-base;
+    font-weight: $o-font-weight-medium;
+    color: $o-gray-900;
     margin: 0;
 }
 
@@ -151,29 +141,41 @@
     width: 100%;
     margin-bottom: 0;
 
-    // Necesario para que funcione el border-bottom de 2px del th.
-    border-collapse: separate;
-    border-spacing: 0;
+    // Con bordes de 1px ya no hace falta `separate`; collapse es lo nativo.
+    border-collapse: collapse;
 
     th {
-        // #f1f3f5 no tiene equivalente exacto en la paleta de Odoo
-        // ($o-gray-100 es #f8f9fa). Se conserva el literal para que la fase A
-        // no cambie ningun pixel. Se resuelve en la fase C.
-        background-color: #f1f3f5;
-        color: $o-gray-700;
-        font-weight: 600;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        padding: 0.75rem 1rem;
-        border-bottom: 2px solid $o-gray-300;
+        background-color: $o-gray-100;
+        color: $o-gray-600;
+        font-size: $o-font-size-base-smaller;
+        font-weight: $o-font-weight-normal;
+        // Sin uppercase.
+        padding: $o-table-cell-padding-y-sm $o-table-cell-padding-x-sm;
+        border-bottom: 1px solid $o-gray-300;
     }
 
     td {
-        padding: 0.75rem 1rem;
-        font-size: 0.9rem;
+        // Densidad de Odoo: .5rem/.3rem en vez de .75rem/1rem.
+        // Reduce la altura de fila ~22% (de ~47px a ~36px). La ganancia mayor
+        // no viene de aqui sino de eliminar el cromo de bloque (tarjetas,
+        // sombras y margenes de 1.5rem), que liberan ~150px antes de la
+        // primera fila de datos.
+        padding: $o-table-cell-padding-y-sm $o-table-cell-padding-x-sm;
+        font-size: $o-font-size-base-small;
         color: $o-gray-900;
         border-bottom: 1px solid $o-gray-200;
         vertical-align: middle;
+    }
+
+    // Primera y ultima celda alineadas con el padding de la banda.
+    th:first-child,
+    td:first-child {
+        padding-left: 1rem;
+    }
+
+    th:last-child,
+    td:last-child {
+        padding-right: 1rem;
     }
 }
 
@@ -183,7 +185,7 @@
 
 .o_mba_group_row {
     background-color: $o-gray-100;
-    font-weight: 600;
+    font-weight: $o-font-weight-medium;
     transition: background-color 0.15s ease-in-out;
 
     // Unico indicio de que la fila es clicable. No quitar.
@@ -196,14 +198,13 @@
     .o_mba_caret {
         display: inline-block;
         width: 1rem;
+        // Accento permitido: es un control.
         color: $o-enterprise-action-color;
         transition: transform 0.2s ease;
     }
 }
 
 .o_mba_detail_row {
-    background-color: $o-view-background-color;
-
     &:hover {
         background-color: $o-gray-100;
     }
@@ -214,43 +215,40 @@
 // ============================================================================
 
 .o_mba_link {
-    color: $o-brand-primary;                            // antes #714B67, ver nota arriba
-    font-weight: 600;
+    // Acento unico del modulo, y solo aqui: es lo accionable.
+    // Sin font-weight: los links de Odoo no van en negrita.
+    color: $o-enterprise-action-color;
     cursor: pointer;
     text-decoration: none;
 
     &:hover {
+        // Solo subrayado. El #0056b3 anterior cambiaba de tono en hover
+        // (morado -> azul), que no parecia intencional.
         text-decoration: underline;
-        // #0056b3 es azul legacy de Bootstrap 4 y no tiene equivalente en
-        // Odoo. Ademas cambia de tono en hover (morado -> azul), que
-        // probablemente no fue intencional. Se conserva en fase A para no
-        // alterar pixeles; se elimina en la fase C (§3.4 del plan).
-        color: #0056b3;
+        color: $o-enterprise-action-color;
     }
 }
 
 .o_mba_amount {
-    // Mismo stack que tenia literal; $o-font-family-monospace lo define.
-    // En la fase C se sustituye por font-variant-numeric: tabular-nums (§3.5).
-    font-family: $o-font-family-monospace;
-    font-weight: 600;
+    // tabular-nums da la alineacion de digitos que hacia util el monospace,
+    // sin meter una segunda familia tipografica en la pantalla.
+    // Sin font-weight: lo hereda de la fila (normal en detalle, bold en total).
+    font-variant-numeric: tabular-nums;
     text-align: right;
 }
 
 .o_mba_total_row {
-    background-color: #f1f3f5;                          // sin equivalente, ver nota en th
-    font-weight: 700;
-    border-top: 2px solid $o-enterprise-action-color;
+    // Convencion contable: filete superior fino y oscuro, sin fondo.
+    border-top: 1px solid $o-gray-900;
+    font-weight: $o-font-weight-bold;
 }
 
 .o_mba_badge {
-    // #e6f4f1 es un tinte del teal elegido a mano; no es un mix() exacto de
-    // $o-enterprise-action-color con blanco, asi que se conserva literal para
-    // no mover el pixel. Se deriva con mix() en la fase C.
-    background-color: #e6f4f1;
+    // Tinte derivado del acento, no un hex elegido a mano.
+    background-color: mix($o-enterprise-action-color, $o-view-background-color, 10%);
     color: $o-enterprise-action-color;
-    padding: 0.35em 0.65em;
-    font-size: 0.8em;
-    border-radius: 4px;
-    font-weight: 600;
+    padding: 0.15em 0.5em;
+    font-size: $o-font-size-base-smaller;
+    font-weight: $o-font-weight-normal;
+    border-radius: $o-border-radius;
 }

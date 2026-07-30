@@ -106,7 +106,17 @@ Más allá de la limpieza técnica, estos son los cambios de lenguaje visual. Ca
 
 ### 3.2 Densidad
 
-- Padding de celda: de `0.75rem 1rem` a `$o-table-cell-padding-y-sm $o-table-cell-padding-x-sm` (`.5rem .3rem`). Aproximadamente duplica las filas visibles por pantalla.
+- Padding de celda: de `0.75rem 1rem` a `$o-table-cell-padding-y-sm $o-table-cell-padding-x-sm` (`.5rem .3rem`).
+
+**Corrección de una cifra que dí antes.** Escribí que esto "aproximadamente duplica las filas visibles". Es un overclaim. Midiendo:
+
+| | Antes | Después |
+|---|---|---|
+| Altura de fila | ~47px | ~36px (−22%) |
+| Cromo vertical antes de la 1ª fila de datos | ~334px | ~187px (−44%) |
+| Filas visibles en un viewport de 800px | ~10 | ~17 |
+
+O sea +68%, no +100%. La ganancia grande **no viene del padding de celda** sino de eliminar el cromo de bloque: la tarjeta de cabecera, las tarjetas de KPI y los `margin-bottom: 1.5rem` de cada sección. Son estimaciones sobre line-height 1.5; el número real depende del zoom y del contenido.
 - Gaps entre bloques: de `1.5rem` a `0` (los hairlines hacen la separación).
 - Font size: de `0.9rem`/`0.85rem` a `$o-font-size-base-small` (13px) para tabla y `$o-font-size-base-smaller` (12px) para labels.
 
