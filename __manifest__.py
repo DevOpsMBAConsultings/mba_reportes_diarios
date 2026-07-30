@@ -1,6 +1,6 @@
 {
     "name": "Panamá - Reportes Diarios Cierre de Caja (MBA Consultings)",
-    "version": "18.0.1.0.17",
+    "version": "18.0.1.0.18",
     "category": "Accounting/Localizations",
     "summary": "Reportes diarios agnósticos: Cierre de caja para facturación, cobros CxC, POS y matriz mensual MTD. | MBA Consultings",
     "author": "MBA Consultings, Brooks Gonzalez",
@@ -31,7 +31,7 @@
     ],
     "assets": {
         "web.assets_backend": [
-            "mba_reportes_diarios/static/src/css/daily_cxc_report.css",
+            "mba_reportes_diarios/static/src/scss/report_common.scss",
             "mba_reportes_diarios/static/src/xml/daily_cxc_report.xml",
             "mba_reportes_diarios/static/src/js/daily_cxc_report.js",
             "mba_reportes_diarios/static/src/xml/daily_invoice_report.xml",

@@ -1,0 +1,273 @@
+///
+/// Estilos compartidos de los reportes diarios (MBA Consultings)
+///
+/// FASE A del refactor (ver REFACTOR_UI.md).
+///
+/// Esta fase NO cambia el diseño. Solo:
+///   1. Migra de .css a .scss para poder usar las variables de Odoo.
+///   2. Sustituye los hex hardcodeados por sus variables $o-* equivalentes.
+///   3. Introduce el prefijo o_mba_*, manteniendo las clases viejas como alias.
+///
+/// Las variables $o-* vienen del bundle web._assets_primary_variables, que
+/// web.assets_backend ya incluye antes de este archivo. No hay que importar nada.
+///
+/// Los selectores marcados con "LEGACY" se eliminan en la fase B, cuando las
+/// plantillas XML pasen a usar los nombres nuevos.
+///
+
+// ============================================================================
+// Contenedor principal
+// ============================================================================
+
+.o_mba_report,
+.o_daily_cxc_report {                                   // LEGACY
+    background-color: $o-gray-100;
+    padding: 1.5rem;
+
+    // NO TOCAR — fix de scroll vertical, commit cc7a683 (v18.0.1.0.17).
+    // Sin estas tres propiedades el contenido no scrollea dentro del
+    // client action. Parecen decoración y no lo son.
+    height: 100%;
+    min-height: 100%;
+    overflow-y: auto;
+
+    // El font-family que había aquí era una re-declaración literal de
+    // $o-system-fonts, que Odoo ya aplica al body. Eliminado por redundante.
+}
+
+// ============================================================================
+// Cabecera
+// ============================================================================
+
+.o_mba_report_header,
+.o_daily_cxc_header {                                   // LEGACY
+    background-color: $o-view-background-color;
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    margin-bottom: 1.5rem;
+
+    .o_mba_report_title,
+    .report_title {                                     // LEGACY
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: $o-gray-900;
+        margin: 0;
+    }
+
+    .o_mba_report_subtitle,
+    .report_subtitle {                                  // LEGACY
+        font-size: 0.875rem;
+        color: $o-gray-600;
+    }
+}
+
+// ============================================================================
+// Tarjetas KPI
+// ============================================================================
+
+.o_mba_report_kpis,
+.o_daily_cxc_kpis {                                     // LEGACY
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.o_mba_report_kpi,
+.o_cxc_kpi_card {                                       // LEGACY
+    background: $o-view-background-color;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+    // CORRECCION INTENCIONAL: antes #714B67 hardcodeado, que es
+    // $o-enterprise-color. Forzaba el morado Enterprise sobre instancias
+    // Community. $o-brand-primary resuelve a #71639e en CE y a #714B67 en EE.
+    border-left: 4px solid $o-brand-primary;
+
+    &.o_mba_kpi_success,
+    &.kpi_success {                                     // LEGACY
+        // CORRECCION INTENCIONAL: antes #198754, que es el verde de
+        // Bootstrap 5, no el de Odoo. $o-success es #28a745.
+        border-left-color: $o-success;
+    }
+
+    &.o_mba_kpi_info,
+    &.kpi_info {                                        // LEGACY
+        // CORRECCION INTENCIONAL: antes #0dcaf0, cian de Bootstrap 5.
+        // $o-info es #17a2b8.
+        border-left-color: $o-info;
+    }
+
+    .o_mba_kpi_label,
+    .kpi_title {                                        // LEGACY
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        color: $o-gray-600;
+    }
+
+    .o_mba_kpi_value,
+    .kpi_value {                                        // LEGACY
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: $o-gray-900;
+        margin-top: 0.25rem;
+    }
+}
+
+// ============================================================================
+// Secciones con tabla
+// ============================================================================
+
+.o_mba_report_section,
+.o_cxc_card {                                           // LEGACY
+    background: $o-view-background-color;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    margin-bottom: 1.5rem;
+
+    // Recorta la tabla al border-radius. Si en la fase C se quita el radius,
+    // esta linea se puede quitar tambien.
+    overflow: hidden;
+}
+
+.o_mba_report_section_header,
+.o_cxc_card_header {                                    // LEGACY
+    padding: 1rem 1.25rem;
+    background-color: $o-view-background-color;
+    border-bottom: 1px solid $o-gray-200;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.o_mba_report_section_title,
+.o_cxc_card_title {                                     // LEGACY
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: $o-enterprise-action-color;
+    margin: 0;
+}
+
+// ============================================================================
+// Tabla
+// ============================================================================
+
+.o_mba_report_table,
+.table-cxc {                                            // LEGACY
+    width: 100%;
+    margin-bottom: 0;
+
+    // Necesario para que funcione el border-bottom de 2px del th.
+    border-collapse: separate;
+    border-spacing: 0;
+
+    th {
+        // #f1f3f5 no tiene equivalente exacto en la paleta de Odoo
+        // ($o-gray-100 es #f8f9fa). Se conserva el literal para que la fase A
+        // no cambie ningun pixel. Se resuelve en la fase C.
+        background-color: #f1f3f5;
+        color: $o-gray-700;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        padding: 0.75rem 1rem;
+        border-bottom: 2px solid $o-gray-300;
+    }
+
+    td {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        color: $o-gray-900;
+        border-bottom: 1px solid $o-gray-200;
+        vertical-align: middle;
+    }
+}
+
+// ============================================================================
+// Filas de acordeon
+// ============================================================================
+
+.o_mba_group_row,
+.tr-method-header {                                     // LEGACY
+    background-color: $o-gray-100;
+    font-weight: 600;
+    transition: background-color 0.15s ease-in-out;
+
+    // Unico indicio de que la fila es clicable. No quitar.
+    cursor: pointer;
+
+    &:hover {
+        background-color: $o-gray-200;
+    }
+
+    .o_mba_caret,
+    .caret-icon {                                       // LEGACY
+        display: inline-block;
+        width: 1rem;
+        color: $o-enterprise-action-color;
+        transition: transform 0.2s ease;
+    }
+}
+
+.o_mba_detail_row,
+.tr-detail-row {                                        // LEGACY
+    background-color: $o-view-background-color;
+
+    &:hover {
+        background-color: $o-gray-100;
+    }
+}
+
+// ============================================================================
+// Utilidades
+// ============================================================================
+
+.o_mba_link,
+.clickable-link {                                       // LEGACY
+    color: $o-brand-primary;                            // antes #714B67, ver nota arriba
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+
+    &:hover {
+        text-decoration: underline;
+        // #0056b3 es azul legacy de Bootstrap 4 y no tiene equivalente en
+        // Odoo. Ademas cambia de tono en hover (morado -> azul), que
+        // probablemente no fue intencional. Se conserva en fase A para no
+        // alterar pixeles; se elimina en la fase C (§3.4 del plan).
+        color: #0056b3;
+    }
+}
+
+.o_mba_amount,
+.text-amount {                                          // LEGACY
+    // Mismo stack que tenia literal; $o-font-family-monospace lo define.
+    // En la fase C se sustituye por font-variant-numeric: tabular-nums (§3.5).
+    font-family: $o-font-family-monospace;
+    font-weight: 600;
+    text-align: right;
+}
+
+.o_mba_total_row,
+.total-row {                                            // LEGACY
+    background-color: #f1f3f5;                          // sin equivalente, ver nota en th
+    font-weight: 700;
+    border-top: 2px solid $o-enterprise-action-color;
+}
+
+.o_mba_badge,
+.badge-method {                                         // LEGACY
+    // #e6f4f1 es un tinte del teal elegido a mano; no es un mix() exacto de
+    // $o-enterprise-action-color con blanco, asi que se conserva literal para
+    // no mover el pixel. Se deriva con mix() en la fase C.
+    background-color: #e6f4f1;
+    color: $o-enterprise-action-color;
+    padding: 0.35em 0.65em;
+    font-size: 0.8em;
+    border-radius: 4px;
+    font-weight: 600;
+}
