@@ -289,7 +289,13 @@ class MbaDailyPosWizard(models.TransientModel):
         for inv in invoices:
             sign = 1 if inv.move_type == 'out_invoice' else -1
             for line in inv.invoice_line_ids:
-                if not line.product_id or line.display_type:
+                # OJO: en Odoo 18 display_type de una linea normal vale
+                # 'product', que es truthy (account_move_line.py:306-320).
+                # Un `if line.display_type: continue` descarta TODAS las
+                # lineas de producto. Hay que excluir solo secciones y notas.
+                if not line.product_id:
+                    continue
+                if line.display_type in ('line_section', 'line_note'):
                     continue
                 key = line.product_id.id
                 if key not in product_data:
