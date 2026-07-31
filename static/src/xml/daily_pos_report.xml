@@ -5,7 +5,7 @@
             <!-- Header & Filter Bar -->
             <div class="o_mba_report_header d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <div>
-                    <h2 class="o_mba_report_title">Cierre de Caja - Punto de Venta (POS)</h2>
+                    <h2 class="o_mba_report_title">Cierre Diario</h2>
                     <div class="o_mba_report_subtitle">
                         Empresa: <strong t-esc="state.data.company_name"/> | Generado: <span t-esc="state.data.time_report"/>
                     </div>
@@ -135,7 +135,7 @@
                 <!-- Table 2: Detalle de Órdenes POS -->
                 <div class="o_mba_report_section">
                     <div class="o_mba_report_section_header">
-                        <h3 class="o_mba_report_section_title">Órdenes POS del Día</h3>
+                        <h3 class="o_mba_report_section_title">Órdenes del Día</h3>
                         <span class="badge bg-secondary" t-esc="state.data.total_ordenes + ' Órdenes'"/>
                     </div>
                     <div class="table-responsive">
@@ -197,7 +197,7 @@
                 <!-- Table 3: Productos Vendidos en POS -->
                 <div class="o_mba_report_section">
                     <div class="o_mba_report_section_header">
-                        <h3 class="o_mba_report_section_title">Productos Vendidos en el POS</h3>
+                        <h3 class="o_mba_report_section_title">Productos Vendidos en el Día</h3>
                         <span class="badge bg-secondary" t-esc="state.data.products.length + ' Productos'"/>
                     </div>
                     <div class="table-responsive">

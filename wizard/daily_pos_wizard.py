@@ -80,17 +80,57 @@ class MbaDailyPosWizard(models.TransientModel):
             return invoices
         return invoices.filtered(lambda i: not i.pos_order_ids)
 
+    def _payment_method_label(self, payment):
+        """
+        Nombre del metodo de cobro de un account.payment.
+
+        Fuente principal: payment_method_line_id.name, el campo "Nombre" que
+        se configura en Contabilidad -> Diarios -> pestaña "Pagos entrantes".
+        Es un campo NUCLEO de 'account' (no requiere point_of_sale) y es
+        OBLIGATORIO en la pantalla "Registrar pago" de cualquier factura, asi
+        que esta poblado para absolutamente todos los pagos del canal de
+        Ventas.
+
+        Moto Lider renombro manualmente esas lineas para que coincidan
+        textualmente con los nombres de pos.payment.method del POS (Tarjeta
+        de Crédito, Tarjeta de Débito, Transf. Banesco, Transf. Banco
+        General), asi que este campo por si solo ya unifica el nombre entre
+        POS y Ventas -> Registrar pago, sin depender de que point_of_sale
+        este instalado ni de ninguna pantalla nueva.
+
+        Se detecta si la linea fue efectivamente renombrada comparando
+        contra el nombre generico de su account.payment.method (ej. "Pago
+        manual"): si coincide, nadie la personalizo todavia y el nombre no
+        aporta informacion util para "por donde entro el dinero", asi que se
+        cae a pos.payment.method (por si el pago SI vino de una sesion POS,
+        donde payment_method_line_id no es significativo) o al nombre del
+        diario, en ese orden. Acceso 100% defensivo via _fields.
+        """
+        line = payment.payment_method_line_id
+        if line and line.name and line.name != (line.payment_method_id.name or ''):
+            return line.name
+
+        journal = payment.journal_id
+        if 'pos_payment_method_id' in payment._fields and payment.pos_payment_method_id:
+            return payment.pos_payment_method_id.name
+        if journal and 'pos_payment_method_ids' in journal._fields:
+            methods = journal.pos_payment_method_ids
+            if len(methods) == 1:
+                return methods.name
+        return journal.name or ''
+
     def _invoice_payment_label(self, invoice):
         """
-        Metodo de pago de una factura de ventas.
+        Metodo de cobro de una factura de ventas.
 
-        Si esta conciliada con pagos, se usa el diario de esos pagos. Si no,
-        es una venta a credito y no entro a caja hoy.
+        Si esta conciliada con pagos, se usa el metodo de cobro unificado de
+        esos pagos (ver _payment_method_label). Si no, es una venta a
+        credito y no entro a caja hoy.
         """
         if 'matched_payment_ids' in invoice._fields and invoice.matched_payment_ids:
             names = []
             for pay in invoice.matched_payment_ids:
-                name = pay.journal_id.name or ''
+                name = self._payment_method_label(pay)
                 if name and name not in names:
                     names.append(name)
             if names:

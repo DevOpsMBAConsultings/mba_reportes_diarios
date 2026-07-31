@@ -109,7 +109,7 @@
               sequence="20"/>
 
     <menuitem id="menu_daily_pos_report_item"
-              name="Cierre de Caja - Punto de Venta (POS)"
+              name="Cierre Diario"
               parent="menu_daily_reports_section"
               action="action_daily_pos_client"
               sequence="30"/>

@@ -30,7 +30,7 @@
 
         <!-- Reporte 3: Cierre de Caja — POS -->
         <record id="report_template_daily_pos" model="mba.report.template">
-            <field name="name">Cierre de Caja - Punto de Venta (POS)</field>
+            <field name="name">Cierre Diario</field>
             <field name="description">Reporte diario de cierre de caja del Punto de Venta. Incluye resumen de sesiones POS, desglose por método de pago, detalle de órdenes y productos vendidos. Requiere el módulo point_of_sale.</field>
             <field name="sequence">20</field>
             <field name="icon">fa-shopping-cart</field>
