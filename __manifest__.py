@@ -36,8 +36,13 @@
             "mba_reportes_diarios/static/src/js/daily_cxc_report.js",
             "mba_reportes_diarios/static/src/xml/daily_invoice_report.xml",
             "mba_reportes_diarios/static/src/js/daily_invoice_report.js",
+            # El cuerpo compartido va PRIMERO: las plantillas que lo llaman
+            # con t-call tienen que encontrarlo ya registrado.
+            "mba_reportes_diarios/static/src/xml/closing_report_body.xml",
             "mba_reportes_diarios/static/src/xml/daily_pos_report.xml",
             "mba_reportes_diarios/static/src/js/daily_pos_report.js",
+            "mba_reportes_diarios/static/src/xml/monthly_closing_report.xml",
+            "mba_reportes_diarios/static/src/js/monthly_closing_report.js",
             "mba_reportes_diarios/static/src/xml/monthly_income_report.xml",
             "mba_reportes_diarios/static/src/js/monthly_income_report.js",
             "mba_reportes_diarios/static/src/xml/sales_commission_report.xml",

@@ -87,5 +87,11 @@
         <field name="context">{'default_period_type': 'month'}</field>
     </record>
 
+    <!-- Pantalla OWL del Cierre Mensual (espejo de la diaria) -->
+    <record id="action_monthly_closing_client" model="ir.actions.client">
+        <field name="name">Cierre Mensual</field>
+        <field name="tag">mba_monthly_closing_report</field>
+    </record>
+
 </odoo>
 

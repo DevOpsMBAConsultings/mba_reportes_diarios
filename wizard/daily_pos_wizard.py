@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
-from datetime import datetime, time, timedelta
+from datetime import datetime, date, time, timedelta
 from dateutil.relativedelta import relativedelta
 
 
@@ -24,6 +24,21 @@ class MbaDailyPosWizard(models.TransientModel):
         required=True,
         help="Diario cubre un solo día. Mensual cubre el mes completo de la "
              "fecha seleccionada.",
+    )
+    # Para el cierre mensual: se elige mes y anio, no una fecha completa.
+    month = fields.Selection(
+        [
+            ('1', 'Enero'), ('2', 'Febrero'), ('3', 'Marzo'),
+            ('4', 'Abril'), ('5', 'Mayo'), ('6', 'Junio'),
+            ('7', 'Julio'), ('8', 'Agosto'), ('9', 'Septiembre'),
+            ('10', 'Octubre'), ('11', 'Noviembre'), ('12', 'Diciembre'),
+        ],
+        string="Mes",
+        default=lambda self: str(fields.Date.context_today(self).month),
+    )
+    year = fields.Integer(
+        string="Año",
+        default=lambda self: fields.Date.context_today(self).year,
     )
     company_id = fields.Many2one(
         'res.company',
@@ -48,7 +63,10 @@ class MbaDailyPosWizard(models.TransientModel):
         """
         self.ensure_one()
         if self.period_type == 'month':
-            first = self.date_report.replace(day=1)
+            today = fields.Date.context_today(self)
+            year = self.year or today.year
+            month = int(self.month or today.month)
+            first = date(year, month, 1)
             last = first + relativedelta(months=1, days=-1)
             return first, last
         return self.date_report, self.date_report

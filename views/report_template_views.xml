@@ -117,7 +117,7 @@
     <menuitem id="menu_monthly_closing_report_item"
               name="Cierre Mensual"
               parent="menu_daily_reports_section"
-              action="action_monthly_closing_wizard"
+              action="action_monthly_closing_client"
               sequence="35"/>
 
     <menuitem id="menu_monthly_income_report_item"
