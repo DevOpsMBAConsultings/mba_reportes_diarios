@@ -74,7 +74,7 @@
                              ════════════════════════════════════════════ -->
                         <t t-if="data['sessions']">
                             <p style="margin-bottom: 8px;">
-                                <strong><u>SESIONES POS DEL DÍA</u></strong>
+                                <strong><u>SESIONES POS DEL <t t-if="data['is_range']">MES</t><t t-else="">DÍA</t></u></strong>
                             </p>
                             <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 15px;">
                                 <thead>
@@ -110,7 +110,7 @@
                              RESUMEN DE VENTAS POS
                              ════════════════════════════════════════════ -->
                         <p style="margin-bottom: 8px;">
-                            <strong><u>RESUMEN DE VENTAS DEL DÍA</u></strong>
+                            <strong><u>RESUMEN DE VENTAS DEL <t t-if="data['is_range']">MES</t><t t-else="">DÍA</t></u></strong>
                         </p>
 
                         <table style="width: 100%; margin-bottom: 15px;">
@@ -195,7 +195,7 @@
                              DETALLE DE ÓRDENES POS
                              ════════════════════════════════════════════ -->
                         <h4 style="font-size: 13px; margin-top: 20px; margin-bottom: 8px;">
-                            <strong>Detalle de Órdenes del Día</strong>
+                            <strong>Detalle de Órdenes del <t t-if="data['is_range']">Mes</t><t t-else="">Día</t></strong>
                         </h4>
 
                         <table style="width: 100%; border-collapse: collapse; font-size: 10px;">

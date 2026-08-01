@@ -466,11 +466,20 @@ class MbaDailyPosWizard(models.TransientModel):
         if not company_id:
             company_id = self.env.company.id
 
-        wizard = self.create({
+        vals = {
             'date_report': date_report,
             'period_type': period_type or 'day',
             'company_id': company_id,
-        })
+        }
+        # En modo mensual, _get_date_bounds() lee month/year. Si no se
+        # rellenan aqui, caen en su default (el mes ACTUAL) y el reporte
+        # ignora el mes que el usuario eligio en pantalla.
+        if vals['period_type'] == 'month':
+            ref = fields.Date.to_date(date_report)
+            vals['month'] = str(ref.month)
+            vals['year'] = ref.year
+
+        wizard = self.create(vals)
         raw_data = wizard._get_report_data()
 
         # Formatear números
@@ -512,6 +521,10 @@ class MbaDailyPosWizard(models.TransientModel):
             'total_sin_impuesto': raw_data['total_sin_impuesto'],
             'formatted_total_sin_impuesto': wizard.fmt(raw_data['total_sin_impuesto']),
             'total_ordenes': raw_data['total_ordenes'],
+            # Para que la pantalla OWL pueda titular "del Día" o "del Mes"
+            'is_range': raw_data['is_range'],
+            'date_from': str(raw_data['date_from']),
+            'date_to': str(raw_data['date_to']),
             'total_ventas_pos': raw_data['total_ventas_pos'],
             'formatted_total_ventas_pos': wizard.fmt(raw_data['total_ventas_pos']),
             'total_ventas_ventas': raw_data['total_ventas_ventas'],

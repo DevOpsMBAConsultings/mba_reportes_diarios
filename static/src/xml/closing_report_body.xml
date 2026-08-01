@@ -24,11 +24,11 @@
                 <!-- KPI Summary Cards -->
                 <div class="o_mba_report_kpis">
                     <div class="o_mba_report_kpi o_mba_kpi_success">
-                        <div class="o_mba_kpi_label">Total Ventas POS</div>
+                        <div class="o_mba_kpi_label">Total Ventas</div>
                         <div class="o_mba_kpi_value" t-esc="state.data.formatted_total_ventas"/>
                     </div>
                     <div class="o_mba_report_kpi o_mba_kpi_info">
-                        <div class="o_mba_kpi_label">Total Órdenes POS</div>
+                        <div class="o_mba_kpi_label">Total Órdenes</div>
                         <div class="o_mba_kpi_value" t-esc="state.data.total_ordenes"/>
                     </div>
                     <div class="o_mba_report_kpi">
@@ -46,7 +46,7 @@
                     <div class="col-md-6">
                         <div class="o_mba_report_section">
                             <div class="o_mba_report_section_header">
-                                <h3 class="o_mba_report_section_title">Sesiones del Día</h3>
+                                <h3 class="o_mba_report_section_title">Sesiones POS del <t t-esc="state.data.is_range ? 'Mes' : 'Día'"/></h3>
                             </div>
                             <table class="o_mba_report_table">
                                 <thead>
@@ -60,7 +60,7 @@
                                 <tbody>
                                     <t t-if="!state.data.sessions || state.data.sessions.length === 0">
                                         <tr>
-                                            <td colspan="4" class="text-center py-3 text-muted">No se abrieron sesiones en esta fecha.</td>
+                                            <td colspan="4" class="text-center py-3 text-muted">No se abrieron sesiones en este período.</td>
                                         </tr>
                                     </t>
                                     <t t-foreach="state.data.sessions" t-as="s" t-key="s.name">
@@ -81,7 +81,7 @@
                     <div class="col-md-6">
                         <div class="o_mba_report_section">
                             <div class="o_mba_report_section_header">
-                                <h3 class="o_mba_report_section_title">Desglose por Métodos de Pago POS</h3>
+                                <h3 class="o_mba_report_section_title">Desglose por Métodos de Pago</h3>
                             </div>
                             <table class="o_mba_report_table">
                                 <thead>
@@ -119,7 +119,7 @@
                 <!-- Table 2: Detalle de Órdenes POS -->
                 <div class="o_mba_report_section">
                     <div class="o_mba_report_section_header">
-                        <h3 class="o_mba_report_section_title">Órdenes del Día</h3>
+                        <h3 class="o_mba_report_section_title">Detalle de Órdenes del <t t-esc="state.data.is_range ? 'Mes' : 'Día'"/></h3>
                         <span class="badge bg-secondary" t-esc="state.data.total_ordenes + ' Órdenes'"/>
                     </div>
                     <div class="table-responsive">
@@ -138,7 +138,7 @@
                             <tbody>
                                 <t t-if="!state.data.orders || state.data.orders.length === 0">
                                     <tr>
-                                        <td colspan="7" class="text-center py-4 text-muted">No hay órdenes registradas en esta fecha.</td>
+                                        <td colspan="7" class="text-center py-4 text-muted">No hay órdenes registradas en este período.</td>
                                     </tr>
                                 </t>
                                 <t t-foreach="state.data.orders" t-as="o" t-key="o.order_id">
@@ -181,7 +181,7 @@
                 <!-- Table 3: Productos Vendidos en POS -->
                 <div class="o_mba_report_section">
                     <div class="o_mba_report_section_header">
-                        <h3 class="o_mba_report_section_title">Productos Vendidos en el Día</h3>
+                        <h3 class="o_mba_report_section_title">Productos Vendidos en el <t t-esc="state.data.is_range ? 'Mes' : 'Día'"/></h3>
                         <span class="badge bg-secondary" t-esc="state.data.products.length + ' Productos'"/>
                     </div>
                     <div class="table-responsive">
