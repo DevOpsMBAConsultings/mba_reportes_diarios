@@ -2,6 +2,7 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 from datetime import datetime, time, timedelta
+from dateutil.relativedelta import relativedelta
 
 
 class MbaDailyPosWizard(models.TransientModel):
@@ -13,12 +14,44 @@ class MbaDailyPosWizard(models.TransientModel):
         required=True,
         default=fields.Date.context_today,
     )
+    period_type = fields.Selection(
+        [
+            ('day', 'Diario'),
+            ('month', 'Mensual'),
+        ],
+        string="Tipo de Cierre",
+        default='day',
+        required=True,
+        help="Diario cubre un solo día. Mensual cubre el mes completo de la "
+             "fecha seleccionada.",
+    )
     company_id = fields.Many2one(
         'res.company',
         string="Empresa",
         required=True,
         default=lambda self: self.env.company,
     )
+
+    # ── Rango de fechas ─────────────────────────────────────────────────────
+
+    def _get_date_bounds(self):
+        """
+        Devuelve (desde, hasta) como objetos date segun period_type.
+
+        Un solo wizard sirve para el cierre diario y el mensual. La logica de
+        agregacion es EXACTAMENTE la misma en los dos casos: lo unico que
+        cambia es el rango. Asi no pueden divergir — si se corrige un calculo,
+        queda corregido en ambos.
+
+        En modo mensual se toma el mes de date_report completo, sin importar
+        que dia del mes se haya elegido.
+        """
+        self.ensure_one()
+        if self.period_type == 'month':
+            first = self.date_report.replace(day=1)
+            last = first + relativedelta(months=1, days=-1)
+            return first, last
+        return self.date_report, self.date_report
 
     # ── Validación de módulo ────────────────────────────────────────────────
 
@@ -68,8 +101,10 @@ class MbaDailyPosWizard(models.TransientModel):
 
         Acceso defensivo a pos_order_ids: el modulo solo depende de 'account'.
         """
+        date_from, date_to = self._get_date_bounds()
         domain = [
-            ('invoice_date', '=', self.date_report),
+            ('invoice_date', '>=', date_from),
+            ('invoice_date', '<=', date_to),
             ('move_type', 'in', ('out_invoice', 'out_refund')),
             ('state', '=', 'posted'),
             ('company_id', '=', self.company_id.id),
@@ -158,10 +193,11 @@ class MbaDailyPosWizard(models.TransientModel):
         PosSession = self.env['pos.session']
 
         # ── Rango de fecha ──────────────────────────────────────────────
-        date_start = datetime.combine(self.date_report, time.min)
-        date_end = datetime.combine(self.date_report, time.max)
+        bound_from, bound_to = self._get_date_bounds()
+        date_start = datetime.combine(bound_from, time.min)
+        date_end = datetime.combine(bound_to, time.max)
 
-        # ── Órdenes POS del día ─────────────────────────────────────────
+        # ── Órdenes POS del periodo ─────────────────────────────────────
         orders = PosOrder.search([
             ('date_order', '>=', date_start),
             ('date_order', '<=', date_end),
@@ -366,6 +402,9 @@ class MbaDailyPosWizard(models.TransientModel):
         return {
             'company': self.company_id,
             'date_report': self.date_report,
+            'date_from': bound_from,
+            'date_to': bound_to,
+            'is_range': bound_from != bound_to,
             'time_report': fields.Datetime.context_timestamp(
                 self, datetime.now()
             ).strftime('%I:%M %p'),
@@ -394,9 +433,15 @@ class MbaDailyPosWizard(models.TransientModel):
     # ── API para Cliente Dinámico (OWL Frontend) ────────────────────────────
 
     @api.model
-    def get_client_report_data(self, date_report=None, company_id=None):
+    def get_client_report_data(self, date_report=None, company_id=None,
+                               period_type='day'):
         """
-        Retorna los datos formateados para el Dashboard OWL de Cierre POS.
+        Retorna los datos formateados para el Dashboard OWL de Cierre.
+
+        period_type acepta 'day' (por defecto, comportamiento historico) o
+        'month'. El componente OWL actual no lo envia, asi que sigue viendo
+        el cierre del dia exactamente como antes; el parametro queda listo
+        por si se agrega el selector en pantalla.
         """
         if not date_report:
             date_report = fields.Date.context_today(self)
@@ -405,6 +450,7 @@ class MbaDailyPosWizard(models.TransientModel):
 
         wizard = self.create({
             'date_report': date_report,
+            'period_type': period_type or 'day',
             'company_id': company_id,
         })
         raw_data = wizard._get_report_data()

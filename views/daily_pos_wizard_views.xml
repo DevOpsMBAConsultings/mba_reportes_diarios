@@ -8,10 +8,20 @@
         <field name="name">mba.daily.pos.wizard.form</field>
         <field name="model">mba.daily.pos.wizard</field>
         <field name="arch" type="xml">
-            <form string="Cierre de Caja - POS">
+            <form string="Cierre de Ventas">
                 <group>
                     <group>
-                        <field name="date_report"/>
+                        <field name="period_type" widget="radio"/>
+                        <!-- Mismo campo con dos etiquetas: en modo mensual se
+                             toma el mes completo de la fecha elegida, asi que
+                             el dia exacto da igual. -->
+                        <field name="date_report"
+                               string="Fecha"
+                               invisible="period_type != 'day'"/>
+                        <field name="date_report"
+                               string="Mes"
+                               invisible="period_type != 'month'"
+                               help="Se toma el mes completo de esta fecha."/>
                         <field name="company_id" groups="base.group_multi_company"/>
                     </group>
                 </group>
@@ -29,7 +39,7 @@
 
     <!-- Acción de ventana del wizard (modal clásico) -->
     <record id="action_daily_pos_wizard" model="ir.actions.act_window">
-        <field name="name">Cierre de Caja - POS</field>
+        <field name="name">Cierre de Ventas (Diario / Mensual)</field>
         <field name="res_model">mba.daily.pos.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
@@ -37,7 +47,7 @@
 
     <!-- Acción de Cliente Dinámico (OWL Frontend) -->
     <record id="action_daily_pos_client" model="ir.actions.client">
-        <field name="name">Cierre de Caja - POS</field>
+        <field name="name">Cierre de Ventas</field>
         <field name="tag">mba_daily_pos_report</field>
     </record>
 

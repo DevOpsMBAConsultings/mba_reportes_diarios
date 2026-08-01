@@ -109,7 +109,7 @@
               sequence="20"/>
 
     <menuitem id="menu_daily_pos_report_item"
-              name="Cierre Diario"
+              name="Cierre Diario / Mensual"
               parent="menu_daily_reports_section"
               action="action_daily_pos_client"
               sequence="30"/>
