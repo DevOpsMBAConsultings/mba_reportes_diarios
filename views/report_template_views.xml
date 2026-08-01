@@ -109,10 +109,16 @@
               sequence="20"/>
 
     <menuitem id="menu_daily_pos_report_item"
-              name="Cierre Diario / Mensual"
+              name="Cierre Diario"
               parent="menu_daily_reports_section"
               action="action_daily_pos_client"
               sequence="30"/>
+
+    <menuitem id="menu_monthly_closing_report_item"
+              name="Cierre Mensual"
+              parent="menu_daily_reports_section"
+              action="action_monthly_closing_wizard"
+              sequence="35"/>
 
     <menuitem id="menu_monthly_income_report_item"
               name="Resumen Mensual de Ingresos (MTD)"

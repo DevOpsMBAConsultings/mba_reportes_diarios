@@ -8,20 +8,10 @@
         <field name="name">mba.daily.pos.wizard.form</field>
         <field name="model">mba.daily.pos.wizard</field>
         <field name="arch" type="xml">
-            <form string="Cierre de Ventas">
+            <form string="Cierre de Caja - POS">
                 <group>
                     <group>
-                        <field name="period_type" widget="radio"/>
-                        <!-- Mismo campo con dos etiquetas: en modo mensual se
-                             toma el mes completo de la fecha elegida, asi que
-                             el dia exacto da igual. -->
-                        <field name="date_report"
-                               string="Fecha"
-                               invisible="period_type != 'day'"/>
-                        <field name="date_report"
-                               string="Mes"
-                               invisible="period_type != 'month'"
-                               help="Se toma el mes completo de esta fecha."/>
+                        <field name="date_report"/>
                         <field name="company_id" groups="base.group_multi_company"/>
                     </group>
                 </group>
@@ -39,7 +29,7 @@
 
     <!-- Acción de ventana del wizard (modal clásico) -->
     <record id="action_daily_pos_wizard" model="ir.actions.act_window">
-        <field name="name">Cierre de Ventas (Diario / Mensual)</field>
+        <field name="name">Cierre de Caja - POS</field>
         <field name="res_model">mba.daily.pos.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
@@ -49,6 +39,52 @@
     <record id="action_daily_pos_client" model="ir.actions.client">
         <field name="name">Cierre de Ventas</field>
         <field name="tag">mba_daily_pos_report</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         Cierre Mensual — entrada SEPARADA
+
+         Usa el mismo wizard (misma logica de agregacion, no puede divergir),
+         pero con su propia vista y su propio menu. La pantalla OWL del cierre
+         diario no se toca: sigue exactamente como la aprobo la clienta.
+
+         El periodo se fija por contexto (default_period_type), no cambiando
+         el default del modelo.
+         ══════════════════════════════════════════════════════════════════ -->
+    <record id="view_monthly_closing_wizard_form" model="ir.ui.view">
+        <field name="name">mba.daily.pos.wizard.monthly.form</field>
+        <field name="model">mba.daily.pos.wizard</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <form string="Cierre Mensual de Ventas">
+                <group>
+                    <group>
+                        <field name="period_type" invisible="1"/>
+                        <field name="date_report"
+                               string="Mes"
+                               help="Se toma el mes completo de esta fecha. El día exacto no importa."/>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_print_report"
+                            string="Generar Reporte PDF"
+                            type="object"
+                            class="btn-primary"
+                            icon="fa-print"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_monthly_closing_wizard" model="ir.actions.act_window">
+        <field name="name">Cierre Mensual de Ventas</field>
+        <field name="res_model">mba.daily.pos.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_monthly_closing_wizard_form"/>
+        <field name="target">new</field>
+        <field name="context">{'default_period_type': 'month'}</field>
     </record>
 
 </odoo>
