@@ -39,6 +39,23 @@
                         <div class="o_mba_kpi_label">Total Recaudado por Métodos</div>
                         <div class="o_mba_kpi_value" t-esc="state.data.formatted_total_pagos"/>
                     </div>
+                    <t t-if="state.data.cost_inventory and state.data.cost_inventory.available">
+                        <div class="o_mba_report_kpi">
+                            <div class="o_mba_kpi_label">Costo de Ventas</div>
+                            <div class="o_mba_kpi_value text-danger" t-esc="state.data.cost_inventory.formatted_costo_ventas"/>
+                        </div>
+                        <div class="o_mba_report_kpi o_mba_kpi_success">
+                            <div class="o_mba_kpi_label">Utilidad Bruta</div>
+                            <div class="o_mba_kpi_value">
+                                <t t-esc="state.data.cost_inventory.formatted_utilidad_bruta"/>
+                                <small class="text-muted" style="font-size: 65%;"> (<t t-esc="state.data.cost_inventory.formatted_margen_pct"/>)</small>
+                            </div>
+                        </div>
+                        <div class="o_mba_report_kpi o_mba_kpi_info">
+                            <div class="o_mba_kpi_label">Inventario Actual</div>
+                            <div class="o_mba_kpi_value" t-esc="state.data.cost_inventory.formatted_inventario_total"/>
+                        </div>
+                    </t>
                 </div>
 
                 <!-- Table 1: Sesiones POS y Métodos de Pago -->
@@ -229,6 +246,63 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Table 4: Detalle de Inventario x Departamentos -->
+                <t t-if="state.data.cost_inventory and state.data.cost_inventory.available">
+                    <div class="o_mba_report_section">
+                        <div class="o_mba_report_section_header">
+                            <h3 class="o_mba_report_section_title">Detalle de Inventario x Departamentos</h3>
+                            <span class="badge bg-secondary" t-esc="state.data.cost_inventory.inventario_categorias.length + ' Departamentos'"/>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="o_mba_report_table">
+                                <thead>
+                                    <tr>
+                                        <th>Descripción</th>
+                                        <th class="text-end">Valor Inventario</th>
+                                        <th class="text-end">Porc.</th>
+                                        <th class="text-end">Total Ventas</th>
+                                        <th class="text-end">Cto. de Venta</th>
+                                        <th class="text-end">Utilidad</th>
+                                        <th class="text-end">Porc.</th>
+                                        <th class="text-end">T. Compras</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-if="!state.data.cost_inventory.inventario_categorias or state.data.cost_inventory.inventario_categorias.length === 0">
+                                        <tr>
+                                            <td colspan="8" class="text-center py-3 text-muted">No hay datos de inventario.</td>
+                                        </tr>
+                                    </t>
+                                    <t t-foreach="state.data.cost_inventory.inventario_categorias" t-as="c" t-key="c.categ_id">
+                                        <tr>
+                                            <td t-esc="c.name"/>
+                                            <td class="o_mba_amount" t-esc="c.formatted_valor"/>
+                                            <td class="o_mba_amount" t-esc="c.formatted_porc"/>
+                                            <td class="o_mba_amount" t-esc="c.formatted_ventas"/>
+                                            <td class="o_mba_amount" t-esc="c.formatted_costo"/>
+                                            <td class="o_mba_amount" t-esc="c.formatted_utilidad"/>
+                                            <td class="o_mba_amount" t-esc="c.formatted_margen_pct"/>
+                                            <td class="o_mba_amount" t-esc="c.formatted_compras"/>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="o_mba_total_row">
+                                        <td class="text-end">TOTALES DEPARTAMENTOS:</td>
+                                        <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_valor"/>
+                                        <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_porc"/>
+                                        <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_ventas"/>
+                                        <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_costo"/>
+                                        <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_utilidad"/>
+                                        <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_margen_pct"/>
+                                        <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_compras"/>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </t>
             </t>
     </t>
 

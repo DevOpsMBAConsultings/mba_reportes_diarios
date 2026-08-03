@@ -192,6 +192,201 @@ class MbaDailyPosWizard(models.TransientModel):
             return _('Cobrada')
         return _('Crédito')
 
+    # ── Costo de ventas, utilidad e inventario ──────────────────────────────
+
+    def _get_cost_and_inventory(self, date_start, date_end, total_ventas, products=None):
+        """
+        Costo de ventas del periodo, utilidad bruta e inventario actual,
+        y desglose por categoría de producto (departamento).
+
+        Fuente: stock.valuation.layer (modulo stock_account). Acceso defensivo
+        porque este modulo solo depende de 'account': si no hay valuacion
+        instalada o configurada, devuelve ceros y el reporte lo avisa en vez
+        de fallar.
+        """
+        vacio = {
+            'available': False,
+            'costo_ventas': 0.0,
+            'formatted_costo_ventas': self.fmt(0.0),
+            'utilidad_bruta': 0.0,
+            'formatted_utilidad_bruta': self.fmt(0.0),
+            'margen_pct': 0.0,
+            'formatted_margen_pct': '0.00%',
+            'inventario_total': 0.0,
+            'formatted_inventario_total': self.fmt(0.0),
+            'inventario_categorias': [],
+            'totals': {
+                'valor': 0.0,
+                'formatted_valor': self.fmt(0.0),
+                'porc': 0.0,
+                'formatted_porc': '0.00%',
+                'ventas': 0.0,
+                'formatted_ventas': self.fmt(0.0),
+                'costo': 0.0,
+                'formatted_costo': self.fmt(0.0),
+                'utilidad': 0.0,
+                'formatted_utilidad': self.fmt(0.0),
+                'margen_pct': 0.0,
+                'formatted_margen_pct': '0.00%',
+                'compras': 0.0,
+                'formatted_compras': self.fmt(0.0),
+            },
+        }
+        if 'stock.valuation.layer' not in self.env:
+            return vacio
+
+        SVL = self.env['stock.valuation.layer']
+
+        # ── Costo de ventas del periodo (capas hacia cliente) ───────────
+        salidas = SVL.search([
+            ('company_id', '=', self.company_id.id),
+            ('create_date', '>=', date_start),
+            ('create_date', '<=', date_end),
+            ('stock_move_id.location_dest_id.usage', '=', 'customer'),
+        ])
+        costo_ventas = -sum(salidas.mapped('value'))
+        utilidad = total_ventas - costo_ventas
+        margen = (utilidad / total_ventas * 100.0) if total_ventas else 0.0
+
+        # ── Inventario actual por categoria ─────────────────────────────
+        grupos_inv = SVL.read_group(
+            [('company_id', '=', self.company_id.id)],
+            ['remaining_value:sum'],
+            ['categ_id'],
+        )
+        inventario_total = sum(
+            (g.get('remaining_value') or 0.0) for g in grupos_inv
+        )
+
+        # ── Costo de ventas por categoria ───────────────────────────────
+        grupos_salidas = SVL.read_group(
+            [
+                ('company_id', '=', self.company_id.id),
+                ('create_date', '>=', date_start),
+                ('create_date', '<=', date_end),
+                ('stock_move_id.location_dest_id.usage', '=', 'customer'),
+            ],
+            ['value:sum'],
+            ['categ_id'],
+        )
+
+        categ_map = {}
+        for g in grupos_inv:
+            val = g.get('remaining_value') or 0.0
+            cid = g['categ_id'][0] if g.get('categ_id') else 0
+            cname = g['categ_id'][1] if g.get('categ_id') else _('Sin categoría')
+            if cid not in categ_map:
+                categ_map[cid] = {
+                    'categ_id': cid,
+                    'name': cname,
+                    'valor': 0.0,
+                    'ventas': 0.0,
+                    'costo': 0.0,
+                    'utilidad': 0.0,
+                    'margen_pct': 0.0,
+                    'porc': 0.0,
+                    'compras': 0.0,
+                }
+            categ_map[cid]['valor'] += val
+
+        for g in grupos_salidas:
+            val = -(g.get('value') or 0.0)
+            cid = g['categ_id'][0] if g.get('categ_id') else 0
+            cname = g['categ_id'][1] if g.get('categ_id') else _('Sin categoría')
+            if cid not in categ_map:
+                categ_map[cid] = {
+                    'categ_id': cid,
+                    'name': cname,
+                    'valor': 0.0,
+                    'ventas': 0.0,
+                    'costo': 0.0,
+                    'utilidad': 0.0,
+                    'margen_pct': 0.0,
+                    'porc': 0.0,
+                    'compras': 0.0,
+                }
+            categ_map[cid]['costo'] += val
+
+        if products:
+            for p in products:
+                cid = p.get('categ_id', 0)
+                cname = p.get('categ_name', _('Sin categoría'))
+                if cid not in categ_map:
+                    categ_map[cid] = {
+                        'categ_id': cid,
+                        'name': cname,
+                        'valor': 0.0,
+                        'ventas': 0.0,
+                        'costo': 0.0,
+                        'utilidad': 0.0,
+                        'margen_pct': 0.0,
+                        'porc': 0.0,
+                        'compras': 0.0,
+                    }
+                categ_map[cid]['ventas'] += p.get('monto_bruto', 0.0)
+
+        categorias = []
+        for c in categ_map.values():
+            if not (c['valor'] or c['ventas'] or c['costo']):
+                continue
+            c['utilidad'] = c['ventas'] - c['costo']
+            c['margen_pct'] = (
+                (c['utilidad'] / c['ventas'] * 100.0) if c['ventas'] else 0.0
+            )
+            c['porc'] = (
+                (c['valor'] / inventario_total * 100.0) if inventario_total else 0.0
+            )
+
+            c['formatted_valor'] = self.fmt(c['valor'])
+            c['formatted_porc'] = '{:.2f}%'.format(c['porc'])
+            c['formatted_ventas'] = self.fmt(c['ventas'])
+            c['formatted_costo'] = self.fmt(c['costo'])
+            c['formatted_utilidad'] = self.fmt(c['utilidad'])
+            c['formatted_margen_pct'] = '{:.2f}%'.format(c['margen_pct'])
+            c['formatted_compras'] = self.fmt(c['compras'])
+
+            categorias.append(c)
+
+        categorias.sort(key=lambda c: c['valor'], reverse=True)
+
+        total_ventas_cat = sum(c['ventas'] for c in categorias)
+        total_costo_cat = sum(c['costo'] for c in categorias)
+        total_utilidad_cat = sum(c['utilidad'] for c in categorias)
+        total_compras_cat = sum(c['compras'] for c in categorias)
+        total_margen_cat = (
+            (total_utilidad_cat / total_ventas_cat * 100.0)
+            if total_ventas_cat else 0.0
+        )
+
+        return {
+            'available': True,
+            'costo_ventas': costo_ventas,
+            'formatted_costo_ventas': self.fmt(costo_ventas),
+            'utilidad_bruta': utilidad,
+            'formatted_utilidad_bruta': self.fmt(utilidad),
+            'margen_pct': margen,
+            'formatted_margen_pct': '{:.2f}%'.format(margen),
+            'inventario_total': inventario_total,
+            'formatted_inventario_total': self.fmt(inventario_total),
+            'inventario_categorias': categorias,
+            'totals': {
+                'valor': inventario_total,
+                'formatted_valor': self.fmt(inventario_total),
+                'porc': 100.0 if inventario_total else 0.0,
+                'formatted_porc': '100.00%' if inventario_total else '0.00%',
+                'ventas': total_ventas_cat,
+                'formatted_ventas': self.fmt(total_ventas_cat),
+                'costo': total_costo_cat,
+                'formatted_costo': self.fmt(total_costo_cat),
+                'utilidad': total_utilidad_cat,
+                'formatted_utilidad': self.fmt(total_utilidad_cat),
+                'margen_pct': total_margen_cat,
+                'formatted_margen_pct': '{:.2f}%'.format(total_margen_cat),
+                'compras': total_compras_cat,
+                'formatted_compras': self.fmt(total_compras_cat),
+            },
+        }
+
     # ── Datos del reporte ───────────────────────────────────────────────────
 
     def _get_report_data(self):
@@ -367,6 +562,8 @@ class MbaDailyPosWizard(models.TransientModel):
                         'product_id': line.product_id.id,
                         'item': line.product_id.default_code or '',
                         'descripcion': line.product_id.name or '',
+                        'categ_id': line.product_id.categ_id.id if line.product_id.categ_id else 0,
+                        'categ_name': line.product_id.categ_id.name if line.product_id.categ_id else _('Sin categoría'),
                         'cantidad': 0.0,
                         'monto_bruto': 0.0,
                         'impuestos': 0.0,
@@ -397,6 +594,8 @@ class MbaDailyPosWizard(models.TransientModel):
                         'product_id': line.product_id.id,
                         'item': line.product_id.default_code or '',
                         'descripcion': line.product_id.name or '',
+                        'categ_id': line.product_id.categ_id.id if line.product_id.categ_id else 0,
+                        'categ_name': line.product_id.categ_id.name if line.product_id.categ_id else _('Sin categoría'),
                         'cantidad': 0.0,
                         'monto_bruto': 0.0,
                         'impuestos': 0.0,
@@ -416,6 +615,10 @@ class MbaDailyPosWizard(models.TransientModel):
             'impuestos': sum(p['impuestos'] for p in products),
             'monto_neto': sum(p['monto_neto'] for p in products),
         }
+
+        cost_inventory = self._get_cost_and_inventory(
+            date_start, date_end, total_sin_impuesto, products
+        )
 
         return {
             'company': self.company_id,
@@ -446,6 +649,8 @@ class MbaDailyPosWizard(models.TransientModel):
             # Productos
             'products': products,
             'prod_totals': prod_totals,
+            # Costo de ventas e inventario
+            'cost_inventory': cost_inventory,
         }
 
     # ── API para Cliente Dinámico (OWL Frontend) ────────────────────────────
@@ -538,5 +743,6 @@ class MbaDailyPosWizard(models.TransientModel):
             'order_totals': ot,
             'products': raw_data['products'],
             'prod_totals': pt,
+            'cost_inventory': raw_data['cost_inventory'],
         }
 
