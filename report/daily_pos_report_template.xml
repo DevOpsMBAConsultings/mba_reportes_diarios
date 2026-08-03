@@ -338,16 +338,17 @@
 
                         <!-- Tabla: Detalle de Inventario x Departamentos -->
                         <t t-if="data.get('cost_inventory') and data['cost_inventory']['available']">
-                            <div style="font-weight: bold; font-size: 11px; margin-top: 15px; margin-bottom: 4px;">
-                                <u>DETALLE DE INVENTARIO X DEPARTAMENTOS</u>
-                            </div>
+                            <div style="page-break-inside: avoid; margin-top: 20px;">
+                                <div style="font-weight: bold; font-size: 11px; margin-bottom: 6px;">
+                                    <u>DETALLE DE INVENTARIO X DEPARTAMENTOS</u>
+                                </div>
 
-                            <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 15px;">
-                                <thead>
-                                    <tr style="background-color: #2E7D32; color: white;">
-                                        <th style="padding: 5px; border: 1px solid #666;">Descripción</th>
-                                        <th style="padding: 5px; border: 1px solid #666; text-align: right;">Valor Inventario</th>
-                                        <th style="padding: 5px; border: 1px solid #666; text-align: right;">Porc.</th>
+                                <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 15px; page-break-inside: avoid;">
+                                    <thead>
+                                        <tr style="background-color: #2E7D32; color: white; page-break-inside: avoid;">
+                                            <th style="padding: 5px; border: 1px solid #666;">Descripción</th>
+                                            <th style="padding: 5px; border: 1px solid #666; text-align: right;">Valor Inventario</th>
+                                            <th style="padding: 5px; border: 1px solid #666; text-align: right;">Porc.</th>
                                         <th style="padding: 5px; border: 1px solid #666; text-align: right;">Total Ventas</th>
                                         <th style="padding: 5px; border: 1px solid #666; text-align: right;">Cto. de Venta</th>
                                         <th style="padding: 5px; border: 1px solid #666; text-align: right;">Utilidad</th>
@@ -357,14 +358,14 @@
                                 </thead>
                                 <tbody>
                                     <t t-if="not data['cost_inventory']['inventario_categorias']">
-                                        <tr>
+                                        <tr style="page-break-inside: avoid;">
                                             <td colspan="8" style="padding: 6px; text-align: center; border: 1px solid #ccc; color: #666;">
                                                 No hay datos de inventario.
                                             </td>
                                         </tr>
                                     </t>
                                     <t t-foreach="data['cost_inventory']['inventario_categorias']" t-as="c">
-                                        <tr>
+                                        <tr style="page-break-inside: avoid;">
                                             <td style="padding: 4px 6px; border: 1px solid #ccc;">
                                                 <t t-esc="c['name']"/>
                                             </td>
@@ -393,7 +394,7 @@
                                     </t>
                                 </tbody>
                                 <tfoot>
-                                    <tr style="background-color: #e8f5e9; font-weight: bold;">
+                                    <tr style="background-color: #e8f5e9; font-weight: bold; page-break-inside: avoid;">
                                         <td style="padding: 4px 6px; border: 1px solid #ccc; text-align: right;">
                                             TOTALES :
                                         </td>
@@ -421,6 +422,7 @@
                                     </tr>
                                 </tfoot>
                             </table>
+                            </div>
 
                         </t>
                     </div>
