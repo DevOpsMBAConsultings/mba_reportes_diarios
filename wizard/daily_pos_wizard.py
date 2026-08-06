@@ -415,11 +415,16 @@ class MbaDailyPosWizard(models.TransientModel):
                 ('state', 'in', ('paid', 'done', 'invoiced')),
                 ('company_id', '=', self.company_id.id),
             ], order='name asc')
+            session_ids = orders.mapped('session_id')
+            total_ventas_pos = sum(orders.mapped('amount_total'))
+            total_impuestos_pos = sum(orders.mapped('amount_tax'))
         else:
-            orders = self.env['pos.order'] if 'pos.order' in self.env else []
+            orders = self.env['account.move'].browse()
+            session_ids = self.env['account.move'].browse()
+            total_ventas_pos = 0.0
+            total_impuestos_pos = 0.0
 
         # ── Sesiones involucradas ───────────────────────────────────────
-        session_ids = orders.mapped('session_id')
         sessions_info = []
         for session in session_ids:
             sessions_info.append({
@@ -446,9 +451,6 @@ class MbaDailyPosWizard(models.TransientModel):
             (i.amount_tax if i.move_type == 'out_invoice' else -i.amount_tax)
             for i in invoices
         )
-
-        total_ventas_pos = sum(orders.mapped('amount_total'))
-        total_impuestos_pos = sum(orders.mapped('amount_tax'))
 
         total_ventas = total_ventas_pos + inv_total
         total_impuestos = total_impuestos_pos + inv_tax
