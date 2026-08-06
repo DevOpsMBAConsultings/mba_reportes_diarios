@@ -31,36 +31,11 @@
                         <i class="fa fa-file-excel-o me-1" /> Exportar (XLSX)
                     </button>
 
-                    <div class="input-group input-group-sm ms-3" style="width: auto;">
-                        <span class="input-group-text bg-white">
-                            <i class="fa fa-calendar" /> Mes
-                        </span>
-                        <select
-                            class="form-select"
-                            t-model="state.month"
-                            t-on-change="onPeriodChange"
-                        >
-                            <option
-                                t-foreach="months"
-                                t-as="m"
-                                t-key="m.value"
-                                t-att-value="m.value"
-                                t-esc="m.label"
-                            />
-                        </select>
-                        <select
-                            class="form-select"
-                            t-model="state.year"
-                            t-on-change="onPeriodChange"
-                        >
-                            <option
-                                t-foreach="years"
-                                t-as="y"
-                                t-key="y"
-                                t-att-value="y"
-                                t-esc="y"
-                            />
-                        </select>
+                    <div class="d-flex align-items-center gap-1 ms-2">
+                        <span class="small text-muted">Desde:</span>
+                        <input type="date" class="form-control form-control-sm" t-model="state.date_from" t-on-change="onFilterChange"/>
+                        <span class="small text-muted ms-1">Hasta:</span>
+                        <input type="date" class="form-control form-control-sm" t-model="state.date_to" t-on-change="onFilterChange"/>
                     </div>
                 </div>
             </div>

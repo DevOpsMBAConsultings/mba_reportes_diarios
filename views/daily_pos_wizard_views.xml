@@ -60,9 +60,8 @@
                 <group>
                     <group>
                         <field name="period_type" invisible="1"/>
-                        <field name="date_report"
-                               string="Mes"
-                               help="Se toma el mes completo de esta fecha. El día exacto no importa."/>
+                        <field name="date_from" required="1"/>
+                        <field name="date_to" required="1"/>
                         <field name="company_id" groups="base.group_multi_company"/>
                     </group>
                 </group>

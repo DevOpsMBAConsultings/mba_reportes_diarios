@@ -23,33 +23,13 @@ export class MonthlyClosingReport extends Component {
         this.orm = useService("orm");
         this.actionService = useService("action");
 
-        const now = new Date();
-
-        this.months = [
-            { value: 1, label: "Enero" },
-            { value: 2, label: "Febrero" },
-            { value: 3, label: "Marzo" },
-            { value: 4, label: "Abril" },
-            { value: 5, label: "Mayo" },
-            { value: 6, label: "Junio" },
-            { value: 7, label: "Julio" },
-            { value: 8, label: "Agosto" },
-            { value: 9, label: "Septiembre" },
-            { value: 10, label: "Octubre" },
-            { value: 11, label: "Noviembre" },
-            { value: 12, label: "Diciembre" },
-        ];
-
-        // Rango de anios ofrecido: 5 atras y el actual.
-        const currentYear = now.getFullYear();
-        this.years = [];
-        for (let y = currentYear; y >= currentYear - 5; y--) {
-            this.years.push(y);
-        }
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
+        const lastDay = today.toISOString().split("T")[0];
 
         this.state = useState({
-            month: now.getMonth() + 1,
-            year: currentYear,
+            date_from: firstDay,
+            date_to: lastDay,
             loading: true,
             data: {},
         });
@@ -59,19 +39,8 @@ export class MonthlyClosingReport extends Component {
         });
     }
 
-    /**
-     * El backend recibe una fecha cualquiera del mes mas period_type 'month',
-     * y resuelve el rango completo en _get_date_bounds(). Se manda el dia 1
-     * para no depender de meses de 28/30/31 dias.
-     */
-    get referenceDate() {
-        const mm = String(this.state.month).padStart(2, "0");
-        return `${this.state.year}-${mm}-01`;
-    }
-
     get periodLabel() {
-        const m = this.months.find((x) => x.value === Number(this.state.month));
-        return `${m ? m.label : ""} ${this.state.year}`;
+        return `${this.state.date_from} al ${this.state.date_to}`;
     }
 
     async loadData() {
@@ -80,7 +49,7 @@ export class MonthlyClosingReport extends Component {
             const data = await this.orm.call(
                 "mba.daily.pos.wizard",
                 "get_client_report_data",
-                [this.referenceDate, null, "month"]
+                [null, null, "month", this.state.date_from, this.state.date_to]
             );
             this.state.data = data;
         } catch (error) {
@@ -90,7 +59,7 @@ export class MonthlyClosingReport extends Component {
         }
     }
 
-    async onPeriodChange() {
+    async onFilterChange() {
         await this.loadData();
     }
 
@@ -129,10 +98,9 @@ export class MonthlyClosingReport extends Component {
 
     async printPdf() {
         const wizardId = await this.orm.create("mba.daily.pos.wizard", [{
-            date_report: this.referenceDate,
+            date_from: this.state.date_from,
+            date_to: this.state.date_to,
             period_type: "month",
-            month: String(this.state.month),
-            year: this.state.year,
             company_id: this.state.data.company_id,
         }]);
 

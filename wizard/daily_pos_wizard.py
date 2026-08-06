@@ -14,16 +14,21 @@ class MbaDailyPosWizard(models.TransientModel):
         required=True,
         default=fields.Date.context_today,
     )
+    date_from = fields.Date(
+        "Fecha Desde",
+    )
+    date_to = fields.Date(
+        "Fecha Hasta",
+    )
     period_type = fields.Selection(
         [
             ('day', 'Diario'),
-            ('month', 'Mensual'),
+            ('month', 'Mensual / Rango'),
         ],
         string="Tipo de Cierre",
         default='day',
         required=True,
-        help="Diario cubre un solo día. Mensual cubre el mes completo de la "
-             "fecha seleccionada.",
+        help="Diario cubre un solo día. Mensual / Rango cubre el período seleccionado.",
     )
     # Para el cierre mensual: se elige mes y anio, no una fecha completa.
     month = fields.Selection(
@@ -51,17 +56,18 @@ class MbaDailyPosWizard(models.TransientModel):
 
     def _get_date_bounds(self):
         """
-        Devuelve (desde, hasta) como objetos date segun period_type.
+        Devuelve (desde, hasta) como objetos date segun period_type o date_from/date_to.
 
         Un solo wizard sirve para el cierre diario y el mensual. La logica de
         agregacion es EXACTAMENTE la misma en los dos casos: lo unico que
         cambia es el rango. Asi no pueden divergir — si se corrige un calculo,
         queda corregido en ambos.
-
-        En modo mensual se toma el mes de date_report completo, sin importar
-        que dia del mes se haya elegido.
         """
         self.ensure_one()
+        if self.date_from and self.date_to:
+            if self.date_from > self.date_to:
+                return self.date_to, self.date_from
+            return self.date_from, self.date_to
         if self.period_type == 'month':
             today = fields.Date.context_today(self)
             year = self.year or today.year
@@ -657,32 +663,32 @@ class MbaDailyPosWizard(models.TransientModel):
 
     @api.model
     def get_client_report_data(self, date_report=None, company_id=None,
-                               period_type='day'):
+                               period_type='day', date_from=None, date_to=None):
         """
         Retorna los datos formateados para el Dashboard OWL de Cierre.
 
-        period_type acepta 'day' (por defecto, comportamiento historico) o
-        'month'. El componente OWL actual no lo envia, asi que sigue viendo
-        el cierre del dia exactamente como antes; el parametro queda listo
-        por si se agrega el selector en pantalla.
+        period_type acepta 'day' (por defecto, comportamiento histórico) o
+        'month' / rango de fechas si se pasan date_from y date_to.
         """
-        if not date_report:
-            date_report = fields.Date.context_today(self)
         if not company_id:
             company_id = self.env.company.id
 
         vals = {
-            'date_report': date_report,
             'period_type': period_type or 'day',
             'company_id': company_id,
         }
-        # En modo mensual, _get_date_bounds() lee month/year. Si no se
-        # rellenan aqui, caen en su default (el mes ACTUAL) y el reporte
-        # ignora el mes que el usuario eligio en pantalla.
-        if vals['period_type'] == 'month':
-            ref = fields.Date.to_date(date_report)
-            vals['month'] = str(ref.month)
-            vals['year'] = ref.year
+        if date_from and date_to:
+            vals['date_from'] = date_from
+            vals['date_to'] = date_to
+            vals['date_report'] = date_from
+        else:
+            if not date_report:
+                date_report = fields.Date.context_today(self)
+            vals['date_report'] = date_report
+            if vals['period_type'] == 'month':
+                ref = fields.Date.to_date(date_report)
+                vals['month'] = str(ref.month)
+                vals['year'] = ref.year
 
         wizard = self.create(vals)
         raw_data = wizard._get_report_data()
