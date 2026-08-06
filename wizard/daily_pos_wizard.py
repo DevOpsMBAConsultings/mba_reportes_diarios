@@ -77,23 +77,17 @@ class MbaDailyPosWizard(models.TransientModel):
             return first, last
         return self.date_report, self.date_report
 
-    # ── Validación de módulo ────────────────────────────────────────────────
+    # ── Detección de módulo POS ─────────────────────────────────────────────
 
-    def _check_pos_installed(self):
-        """Verifica que el módulo POS esté instalado."""
-        if 'pos.order' not in self.env:
-            raise UserError(_(
-                "El módulo Punto de Venta (POS) no está instalado.\n\n"
-                "Instale el módulo 'point_of_sale' para poder utilizar "
-                "este reporte."
-            ))
+    def _is_pos_installed(self):
+        """Indica si el módulo POS está instalado en la base de datos."""
+        return 'pos.order' in self.env
 
     # ── Acción principal ────────────────────────────────────────────────────
 
     def action_print_report(self):
-        """Genera el reporte PDF de cierre de caja POS."""
+        """Genera el reporte PDF de cierre de caja."""
         self.ensure_one()
-        self._check_pos_installed()
         return self.env.ref(
             'mba_reportes_diarios.action_report_daily_pos'
         ).report_action(self)
@@ -406,23 +400,23 @@ class MbaDailyPosWizard(models.TransientModel):
         Accede a modelos POS de forma dinámica (sin dependencia dura).
         """
         self.ensure_one()
-        self._check_pos_installed()
-
-        PosOrder = self.env['pos.order']
-        PosSession = self.env['pos.session']
 
         # ── Rango de fecha ──────────────────────────────────────────────
         bound_from, bound_to = self._get_date_bounds()
         date_start = datetime.combine(bound_from, time.min)
         date_end = datetime.combine(bound_to, time.max)
 
-        # ── Órdenes POS del periodo ─────────────────────────────────────
-        orders = PosOrder.search([
-            ('date_order', '>=', date_start),
-            ('date_order', '<=', date_end),
-            ('state', 'in', ('paid', 'done', 'invoiced')),
-            ('company_id', '=', self.company_id.id),
-        ], order='name asc')
+        # ── Órdenes POS del periodo (si el módulo POS está instalado) ───
+        if self._is_pos_installed():
+            PosOrder = self.env['pos.order']
+            orders = PosOrder.search([
+                ('date_order', '>=', date_start),
+                ('date_order', '<=', date_end),
+                ('state', 'in', ('paid', 'done', 'invoiced')),
+                ('company_id', '=', self.company_id.id),
+            ], order='name asc')
+        else:
+            orders = self.env['pos.order'] if 'pos.order' in self.env else []
 
         # ── Sesiones involucradas ───────────────────────────────────────
         session_ids = orders.mapped('session_id')
