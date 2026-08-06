@@ -80,15 +80,17 @@
                                             <td colspan="4" class="text-center py-3 text-muted">No se abrieron sesiones en este período.</td>
                                         </tr>
                                     </t>
-                                    <t t-foreach="state.data.sessions" t-as="s" t-key="s.name">
-                                        <tr>
-                                            <td class="fw-bold" t-esc="s.name"/>
-                                            <td t-esc="s.config_name"/>
-                                            <td t-esc="s.user"/>
-                                            <td>
-                                                <span class="badge bg-success" t-esc="s.state"/>
-                                            </td>
-                                        </tr>
+                                    <t t-else="">
+                                        <t t-foreach="state.data.sessions" t-as="s" t-key="s.name">
+                                            <tr>
+                                                <td class="fw-bold" t-esc="s.name"/>
+                                                <td t-esc="s.config_name"/>
+                                                <td t-esc="s.user"/>
+                                                <td>
+                                                    <span class="badge bg-success" t-esc="s.state"/>
+                                                </td>
+                                            </tr>
+                                        </t>
                                     </t>
                                 </tbody>
                             </table>
@@ -114,12 +116,14 @@
                                             <td colspan="3" class="text-center py-3 text-muted">No hay pagos registrados.</td>
                                         </tr>
                                     </t>
-                                    <t t-foreach="state.data.payment_methods" t-as="pm" t-key="pm.name">
-                                        <tr>
-                                            <td class="fw-bold" t-esc="pm.name"/>
-                                            <td class="text-end" t-esc="pm.count"/>
-                                            <td class="o_mba_amount" t-esc="pm.formatted_amount"/>
-                                        </tr>
+                                    <t t-else="">
+                                        <t t-foreach="state.data.payment_methods" t-as="pm" t-key="pm.name">
+                                            <tr>
+                                                <td class="fw-bold" t-esc="pm.name"/>
+                                                <td class="text-end" t-esc="pm.count"/>
+                                                <td class="o_mba_amount" t-esc="pm.formatted_amount"/>
+                                            </tr>
+                                        </t>
                                     </t>
                                 </tbody>
                                 <tfoot>
@@ -137,7 +141,7 @@
                 <div class="o_mba_report_section">
                     <div class="o_mba_report_section_header">
                         <h3 class="o_mba_report_section_title">Detalle de Órdenes del <t t-esc="state.data.is_range ? 'Mes' : 'Día'"/></h3>
-                        <span class="badge bg-secondary" t-esc="state.data.total_ordenes + ' Órdenes'"/>
+                        <span class="badge bg-secondary" t-esc="(state.data.orders ? state.data.orders.length : 0) + ' Órdenes'"/>
                     </div>
                     <div class="table-responsive">
                         <table class="o_mba_report_table">
@@ -158,38 +162,42 @@
                                         <td colspan="7" class="text-center py-4 text-muted">No hay órdenes registradas en este período.</td>
                                     </tr>
                                 </t>
-                                <t t-foreach="state.data.orders" t-as="o" t-key="o.order_id">
-                                    <tr>
-                                        <td>
-                                            <span class="o_mba_link" t-on-click="() => this.openOrder(o.order_id)">
-                                                <t t-esc="o.name"/>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <t t-if="o.partner_id">
-                                                <span class="o_mba_link" t-on-click="() => this.openPartner(o.partner_id)">
-                                                    <t t-esc="o.partner"/>
+                                <t t-else="">
+                                    <t t-foreach="state.data.orders" t-as="o" t-key="o.order_id">
+                                        <tr>
+                                            <td>
+                                                <span class="o_mba_link" t-on-click="() => this.openOrder(o.order_id)">
+                                                    <t t-esc="o.name"/>
                                                 </span>
-                                            </t>
-                                            <t t-else="">
-                                                <t t-esc="o.partner"/>
-                                            </t>
-                                        </td>
-                                        <td t-esc="o.date"/>
-                                        <td><span class="badge bg-light text-dark border" t-esc="o.payment_method"/></td>
-                                        <td class="o_mba_amount" t-esc="o.formatted_amount_untaxed"/>
-                                        <td class="o_mba_amount" t-esc="o.formatted_amount_tax"/>
-                                        <td class="o_mba_amount fw-bold" t-esc="o.formatted_amount_total"/>
-                                    </tr>
+                                            </td>
+                                            <td>
+                                                <t t-if="o.partner_id">
+                                                    <span class="o_mba_link" t-on-click="() => this.openPartner(o.partner_id)">
+                                                        <t t-esc="o.partner"/>
+                                                    </span>
+                                                </t>
+                                                <t t-else="">
+                                                    <t t-esc="o.partner"/>
+                                                </t>
+                                            </td>
+                                            <td t-esc="o.date"/>
+                                            <td><span class="badge bg-light text-dark border" t-esc="o.payment_method"/></td>
+                                            <td class="o_mba_amount" t-esc="o.formatted_amount_untaxed"/>
+                                            <td class="o_mba_amount" t-esc="o.formatted_amount_tax"/>
+                                            <td class="o_mba_amount fw-bold" t-esc="o.formatted_amount_total"/>
+                                        </tr>
+                                    </t>
                                 </t>
                             </tbody>
                             <tfoot>
-                                <tr class="o_mba_total_row">
-                                    <td colspan="4" class="text-end">TOTALES ÓRDENES:</td>
-                                    <td class="o_mba_amount" t-esc="state.data.order_totals.formatted_amount_untaxed"/>
-                                    <td class="o_mba_amount" t-esc="state.data.order_totals.formatted_amount_tax"/>
-                                    <td class="o_mba_amount text-primary" t-esc="state.data.order_totals.formatted_amount_total"/>
-                                </tr>
+                                <t t-if="state.data.order_totals">
+                                    <tr class="o_mba_total_row">
+                                        <td colspan="4" class="text-end">TOTALES ÓRDENES:</td>
+                                        <td class="o_mba_amount" t-esc="state.data.order_totals.formatted_amount_untaxed"/>
+                                        <td class="o_mba_amount" t-esc="state.data.order_totals.formatted_amount_tax"/>
+                                        <td class="o_mba_amount text-primary" t-esc="state.data.order_totals.formatted_amount_total"/>
+                                    </tr>
+                                </t>
                             </tfoot>
                         </table>
                     </div>
@@ -199,7 +207,7 @@
                 <div class="o_mba_report_section">
                     <div class="o_mba_report_section_header">
                         <h3 class="o_mba_report_section_title">Productos Vendidos en el <t t-esc="state.data.is_range ? 'Mes' : 'Día'"/></h3>
-                        <span class="badge bg-secondary" t-esc="state.data.products.length + ' Productos'"/>
+                        <span class="badge bg-secondary" t-esc="(state.data.products ? state.data.products.length : 0) + ' Productos'"/>
                     </div>
                     <div class="table-responsive">
                         <table class="o_mba_report_table">
@@ -219,29 +227,33 @@
                                         <td colspan="6" class="text-center py-3 text-muted">No hay productos vendidos.</td>
                                     </tr>
                                 </t>
-                                <t t-foreach="state.data.products" t-as="p" t-key="p.product_id">
-                                    <tr>
-                                        <td t-esc="p.item"/>
-                                        <td>
-                                            <span class="o_mba_link" t-on-click="() => this.openProduct(p.product_id)">
-                                                <t t-esc="p.descripcion"/>
-                                            </span>
-                                        </td>
-                                        <td class="o_mba_amount" t-esc="p.formatted_cantidad"/>
-                                        <td class="o_mba_amount" t-esc="p.formatted_monto_bruto"/>
-                                        <td class="o_mba_amount" t-esc="p.formatted_impuestos"/>
-                                        <td class="o_mba_amount" t-esc="p.formatted_monto_neto"/>
-                                    </tr>
+                                <t t-else="">
+                                    <t t-foreach="state.data.products" t-as="p" t-key="p.product_id">
+                                        <tr>
+                                            <td t-esc="p.item"/>
+                                            <td>
+                                                <span class="o_mba_link" t-on-click="() => this.openProduct(p.product_id)">
+                                                    <t t-esc="p.descripcion"/>
+                                                </span>
+                                            </td>
+                                            <td class="o_mba_amount" t-esc="p.formatted_cantidad"/>
+                                            <td class="o_mba_amount" t-esc="p.formatted_monto_bruto"/>
+                                            <td class="o_mba_amount" t-esc="p.formatted_impuestos"/>
+                                            <td class="o_mba_amount" t-esc="p.formatted_monto_neto"/>
+                                        </tr>
+                                    </t>
                                 </t>
                             </tbody>
                             <tfoot>
-                                <tr class="o_mba_total_row">
-                                    <td colspan="2" class="text-end">TOTALES PRODUCTOS:</td>
-                                    <td class="o_mba_amount" t-esc="state.data.prod_totals.formatted_cantidad"/>
-                                    <td class="o_mba_amount" t-esc="state.data.prod_totals.formatted_monto_bruto"/>
-                                    <td class="o_mba_amount" t-esc="state.data.prod_totals.formatted_impuestos"/>
-                                    <td class="o_mba_amount" t-esc="state.data.prod_totals.formatted_monto_neto"/>
-                                </tr>
+                                <t t-if="state.data.prod_totals">
+                                    <tr class="o_mba_total_row">
+                                        <td colspan="2" class="text-end">TOTALES PRODUCTOS:</td>
+                                        <td class="o_mba_amount" t-esc="state.data.prod_totals.formatted_cantidad"/>
+                                        <td class="o_mba_amount" t-esc="state.data.prod_totals.formatted_monto_bruto"/>
+                                        <td class="o_mba_amount" t-esc="state.data.prod_totals.formatted_impuestos"/>
+                                        <td class="o_mba_amount" t-esc="state.data.prod_totals.formatted_monto_neto"/>
+                                    </tr>
+                                </t>
                             </tfoot>
                         </table>
                     </div>
@@ -252,7 +264,7 @@
                     <div class="o_mba_report_section">
                         <div class="o_mba_report_section_header">
                             <h3 class="o_mba_report_section_title">Detalle de Inventario x Departamentos</h3>
-                            <span class="badge bg-secondary" t-esc="state.data.cost_inventory.inventario_categorias.length + ' Departamentos'"/>
+                            <span class="badge bg-secondary" t-esc="(state.data.cost_inventory.inventario_categorias ? state.data.cost_inventory.inventario_categorias.length : 0) + ' Departamentos'"/>
                         </div>
                         <div class="table-responsive">
                             <table class="o_mba_report_table">
@@ -274,30 +286,34 @@
                                             <td colspan="8" class="text-center py-3 text-muted">No hay datos de inventario.</td>
                                         </tr>
                                     </t>
-                                    <t t-foreach="state.data.cost_inventory.inventario_categorias" t-as="c" t-key="c.categ_id">
-                                        <tr>
-                                            <td t-esc="c.name"/>
-                                            <td class="o_mba_amount" t-esc="c.formatted_valor"/>
-                                            <td class="o_mba_amount" t-esc="c.formatted_porc"/>
-                                            <td class="o_mba_amount" t-esc="c.formatted_ventas"/>
-                                            <td class="o_mba_amount" t-esc="c.formatted_costo"/>
-                                            <td class="o_mba_amount" t-esc="c.formatted_utilidad"/>
-                                            <td class="o_mba_amount" t-esc="c.formatted_margen_pct"/>
-                                            <td class="o_mba_amount" t-esc="c.formatted_compras"/>
-                                        </tr>
+                                    <t t-else="">
+                                        <t t-foreach="state.data.cost_inventory.inventario_categorias" t-as="c" t-key="c.categ_id">
+                                            <tr>
+                                                <td t-esc="c.name"/>
+                                                <td class="o_mba_amount" t-esc="c.formatted_valor"/>
+                                                <td class="o_mba_amount" t-esc="c.formatted_porc"/>
+                                                <td class="o_mba_amount" t-esc="c.formatted_ventas"/>
+                                                <td class="o_mba_amount" t-esc="c.formatted_costo"/>
+                                                <td class="o_mba_amount" t-esc="c.formatted_utilidad"/>
+                                                <td class="o_mba_amount" t-esc="c.formatted_margen_pct"/>
+                                                <td class="o_mba_amount" t-esc="c.formatted_compras"/>
+                                            </tr>
+                                        </t>
                                     </t>
                                 </tbody>
                                 <tfoot>
-                                    <tr class="o_mba_total_row">
-                                        <td class="text-end">TOTALES DEPARTAMENTOS:</td>
-                                        <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_valor"/>
-                                        <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_porc"/>
-                                        <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_ventas"/>
-                                        <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_costo"/>
-                                        <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_utilidad"/>
-                                        <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_margen_pct"/>
-                                        <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_compras"/>
-                                    </tr>
+                                    <t t-if="state.data.cost_inventory.totals">
+                                        <tr class="o_mba_total_row">
+                                            <td class="text-end">TOTALES DEPARTAMENTOS:</td>
+                                            <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_valor"/>
+                                            <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_porc"/>
+                                            <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_ventas"/>
+                                            <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_costo"/>
+                                            <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_utilidad"/>
+                                            <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_margen_pct"/>
+                                            <td class="o_mba_amount" t-esc="state.data.cost_inventory.totals.formatted_compras"/>
+                                        </tr>
+                                    </t>
                                 </tfoot>
                             </table>
                         </div>

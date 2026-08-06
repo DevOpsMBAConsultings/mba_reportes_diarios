@@ -32,9 +32,20 @@ export class DailyPosReport extends Component {
                 "get_client_report_data",
                 [this.state.date_report]
             );
-            this.state.data = data;
+            this.state.data = data || {
+                sessions: [],
+                payment_methods: [],
+                orders: [],
+                products: [],
+            };
         } catch (error) {
             console.error("Error loading POS report data:", error);
+            this.state.data = {
+                sessions: [],
+                payment_methods: [],
+                orders: [],
+                products: [],
+            };
         } finally {
             this.state.loading = false;
         }

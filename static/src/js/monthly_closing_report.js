@@ -51,9 +51,20 @@ export class MonthlyClosingReport extends Component {
                 "get_client_report_data",
                 [null, null, "month", this.state.date_from, this.state.date_to]
             );
-            this.state.data = data;
+            this.state.data = data || {
+                sessions: [],
+                payment_methods: [],
+                orders: [],
+                products: [],
+            };
         } catch (error) {
             console.error("Error loading monthly closing data:", error);
+            this.state.data = {
+                sessions: [],
+                payment_methods: [],
+                orders: [],
+                products: [],
+            };
         } finally {
             this.state.loading = false;
         }
