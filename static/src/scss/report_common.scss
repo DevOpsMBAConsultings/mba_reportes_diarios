@@ -86,6 +86,18 @@
         font-size: $o-font-size-base-smaller;
         font-weight: $o-font-weight-normal;
         color: $o-gray-600;
+
+        i.fa-question-circle {
+            cursor: help;
+            font-size: 0.85em;
+            opacity: 0.75;
+            transition: opacity 0.15s ease, color 0.15s ease;
+
+            &:hover {
+                opacity: 1;
+                color: $o-enterprise-action-color !important;
+            }
+        }
     }
 
     .o_mba_kpi_value {
