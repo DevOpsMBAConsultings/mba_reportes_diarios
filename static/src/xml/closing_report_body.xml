@@ -83,88 +83,104 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="o_mba_report_section">
-                            <div class="o_mba_report_section_header">
-                                <h3 class="o_mba_report_section_title">Sesiones POS del <t t-esc="state.data.is_range ? 'Mes' : 'Día'"/></h3>
+                            <div class="o_mba_report_section_header" t-on-click="() => this.toggleSection('sessions')" style="cursor: pointer;">
+                                <h3 class="o_mba_report_section_title">
+                                    <i class="fa fa-chevron-down me-1 text-muted" t-if="!isCollapsed('sessions')"></i>
+                                    <i class="fa fa-chevron-right me-1 text-muted" t-if="isCollapsed('sessions')"></i>
+                                    Sesiones POS del <t t-esc="state.data.is_range ? 'Mes' : 'Día'"/>
+                                </h3>
                             </div>
-                            <table class="o_mba_report_table">
-                                <thead>
-                                    <tr>
-                                        <th>Sesión</th>
-                                        <th>Caja / Punto</th>
-                                        <th>Cajero</th>
-                                        <th>Estado</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <t t-if="!state.data.sessions || state.data.sessions.length === 0">
+                            <div t-if="!isCollapsed('sessions')">
+                                <table class="o_mba_report_table">
+                                    <thead>
                                         <tr>
-                                            <td colspan="4" class="text-center py-3 text-muted">No se abrieron sesiones en este período.</td>
+                                            <th>Sesión</th>
+                                            <th>Caja / Punto</th>
+                                            <th>Cajero</th>
+                                            <th>Estado</th>
                                         </tr>
-                                    </t>
-                                    <t t-else="">
-                                        <t t-foreach="state.data.sessions" t-as="s" t-key="s.name">
+                                    </thead>
+                                    <tbody>
+                                        <t t-if="!state.data.sessions || state.data.sessions.length === 0">
                                             <tr>
-                                                <td class="fw-bold" t-esc="s.name"/>
-                                                <td t-esc="s.config_name"/>
-                                                <td t-esc="s.user"/>
-                                                <td>
-                                                    <span class="badge bg-success" t-esc="s.state"/>
-                                                </td>
+                                                <td colspan="4" class="text-center py-3 text-muted">No se abrieron sesiones en este período.</td>
                                             </tr>
                                         </t>
-                                    </t>
-                                </tbody>
-                            </table>
+                                        <t t-else="">
+                                            <t t-foreach="state.data.sessions" t-as="s" t-key="s.name">
+                                                <tr>
+                                                    <td class="fw-bold" t-esc="s.name"/>
+                                                    <td t-esc="s.config_name"/>
+                                                    <td t-esc="s.user"/>
+                                                    <td>
+                                                        <span class="badge bg-success" t-esc="s.state"/>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
 
                     <div class="col-md-6">
                         <div class="o_mba_report_section">
-                            <div class="o_mba_report_section_header">
-                                <h3 class="o_mba_report_section_title">Desglose por Métodos de Pago</h3>
+                            <div class="o_mba_report_section_header" t-on-click="() => this.toggleSection('payments')" style="cursor: pointer;">
+                                <h3 class="o_mba_report_section_title">
+                                    <i class="fa fa-chevron-down me-1 text-muted" t-if="!isCollapsed('payments')"></i>
+                                    <i class="fa fa-chevron-right me-1 text-muted" t-if="isCollapsed('payments')"></i>
+                                    Desglose por Métodos de Pago
+                                </h3>
                             </div>
-                            <table class="o_mba_report_table">
-                                <thead>
-                                    <tr>
-                                        <th>Método de Pago</th>
-                                        <th class="text-end">Transacciones</th>
-                                        <th class="text-end">Monto Recaudado</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <t t-if="!state.data.payment_methods || state.data.payment_methods.length === 0">
+                            <div t-if="!isCollapsed('payments')">
+                                <table class="o_mba_report_table">
+                                    <thead>
                                         <tr>
-                                            <td colspan="3" class="text-center py-3 text-muted">No hay pagos registrados.</td>
+                                            <th>Método de Pago</th>
+                                            <th class="text-end">Transacciones</th>
+                                            <th class="text-end">Monto Recaudado</th>
                                         </tr>
-                                    </t>
-                                    <t t-else="">
-                                        <t t-foreach="state.data.payment_methods" t-as="pm" t-key="pm.name">
+                                    </thead>
+                                    <tbody>
+                                        <t t-if="!state.data.payment_methods || state.data.payment_methods.length === 0">
                                             <tr>
-                                                <td class="fw-bold" t-esc="pm.name"/>
-                                                <td class="text-end" t-esc="pm.count"/>
-                                                <td class="o_mba_amount" t-esc="pm.formatted_amount"/>
+                                                <td colspan="3" class="text-center py-3 text-muted">No hay pagos registrados.</td>
                                             </tr>
                                         </t>
-                                    </t>
-                                </tbody>
-                                <tfoot>
-                                    <tr class="o_mba_total_row">
-                                        <td colspan="2" class="text-end">TOTAL RECAUDADO:</td>
-                                        <td class="o_mba_amount text-primary" t-esc="state.data.formatted_total_pagos"/>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                                        <t t-else="">
+                                            <t t-foreach="state.data.payment_methods" t-as="pm" t-key="pm.name">
+                                                <tr>
+                                                    <td class="fw-bold" t-esc="pm.name"/>
+                                                    <td class="text-end" t-esc="pm.count"/>
+                                                    <td class="o_mba_amount" t-esc="pm.formatted_amount"/>
+                                                </tr>
+                                            </t>
+                                        </t>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="o_mba_total_row">
+                                            <td colspan="2" class="text-end">TOTAL RECAUDADO:</td>
+                                            <td class="o_mba_amount text-primary" t-esc="state.data.formatted_total_pagos"/>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Table 2: Detalle de Órdenes POS -->
                 <div class="o_mba_report_section">
-                    <div class="o_mba_report_section_header">
-                        <h3 class="o_mba_report_section_title">Detalle de Órdenes del <t t-esc="state.data.is_range ? 'Mes' : 'Día'"/></h3>
+                    <div class="o_mba_report_section_header" t-on-click="() => this.toggleSection('orders')" style="cursor: pointer;">
+                        <h3 class="o_mba_report_section_title">
+                            <i class="fa fa-chevron-down me-1 text-muted" t-if="!isCollapsed('orders')"></i>
+                            <i class="fa fa-chevron-right me-1 text-muted" t-if="isCollapsed('orders')"></i>
+                            Detalle de Órdenes del <t t-esc="state.data.is_range ? 'Mes' : 'Día'"/>
+                        </h3>
                         <span class="badge bg-secondary" t-esc="(state.data.orders ? state.data.orders.length : 0) + ' Órdenes'"/>
                     </div>
-                    <div class="table-responsive">
+                    <div t-if="!isCollapsed('orders')" class="table-responsive">
                         <table class="o_mba_report_table">
                             <thead>
                                 <tr>
@@ -226,11 +242,15 @@
 
                 <!-- Table 3: Productos Vendidos en POS -->
                 <div class="o_mba_report_section">
-                    <div class="o_mba_report_section_header">
-                        <h3 class="o_mba_report_section_title">Productos Vendidos en el <t t-esc="state.data.is_range ? 'Mes' : 'Día'"/></h3>
+                    <div class="o_mba_report_section_header" t-on-click="() => this.toggleSection('products')" style="cursor: pointer;">
+                        <h3 class="o_mba_report_section_title">
+                            <i class="fa fa-chevron-down me-1 text-muted" t-if="!isCollapsed('products')"></i>
+                            <i class="fa fa-chevron-right me-1 text-muted" t-if="isCollapsed('products')"></i>
+                            Productos Vendidos en el <t t-esc="state.data.is_range ? 'Mes' : 'Día'"/>
+                        </h3>
                         <span class="badge bg-secondary" t-esc="(state.data.products ? state.data.products.length : 0) + ' Productos'"/>
                     </div>
-                    <div class="table-responsive">
+                    <div t-if="!isCollapsed('products')" class="table-responsive">
                         <table class="o_mba_report_table">
                             <thead>
                                 <tr>
@@ -283,11 +303,15 @@
                 <!-- Table 4: Detalle de Inventario x Departamentos -->
                 <t t-if="state.data.cost_inventory and state.data.cost_inventory.available">
                     <div class="o_mba_report_section">
-                        <div class="o_mba_report_section_header">
-                            <h3 class="o_mba_report_section_title">Detalle de Inventario x Departamentos</h3>
+                        <div class="o_mba_report_section_header" t-on-click="() => this.toggleSection('inventory')" style="cursor: pointer;">
+                            <h3 class="o_mba_report_section_title">
+                                <i class="fa fa-chevron-down me-1 text-muted" t-if="!isCollapsed('inventory')"></i>
+                                <i class="fa fa-chevron-right me-1 text-muted" t-if="isCollapsed('inventory')"></i>
+                                Detalle de Inventario x Departamentos
+                            </h3>
                             <span class="badge bg-secondary" t-esc="(state.data.cost_inventory.inventario_categorias ? state.data.cost_inventory.inventario_categorias.length : 0) + ' Departamentos'"/>
                         </div>
-                        <div class="table-responsive">
+                        <div t-if="!isCollapsed('inventory')" class="table-responsive">
                             <table class="o_mba_report_table">
                                 <thead>
                                     <tr>

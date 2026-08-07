@@ -32,11 +32,20 @@ export class MonthlyClosingReport extends Component {
             date_to: lastDay,
             loading: true,
             data: {},
+            collapsed: {},
         });
 
         onWillStart(async () => {
             await this.loadData();
         });
+    }
+
+    toggleSection(sectionKey) {
+        this.state.collapsed[sectionKey] = !this.state.collapsed[sectionKey];
+    }
+
+    isCollapsed(sectionKey) {
+        return !!this.state.collapsed[sectionKey];
     }
 
     get periodLabel() {

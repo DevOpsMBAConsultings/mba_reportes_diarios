@@ -135,6 +135,15 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+        background-color: $o-gray-100;
+
+        .o_mba_report_section_title i {
+            color: $o-enterprise-action-color !important;
+        }
+    }
 }
 
 .o_mba_report_section_title {

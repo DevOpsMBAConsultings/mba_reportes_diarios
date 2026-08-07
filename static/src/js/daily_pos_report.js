@@ -17,11 +17,20 @@ export class DailyPosReport extends Component {
             date_report: today,
             loading: true,
             data: {},
+            collapsed: {},
         });
 
         onWillStart(async () => {
             await this.loadData();
         });
+    }
+
+    toggleSection(sectionKey) {
+        this.state.collapsed[sectionKey] = !this.state.collapsed[sectionKey];
+    }
+
+    isCollapsed(sectionKey) {
+        return !!this.state.collapsed[sectionKey];
     }
 
     async loadData() {
