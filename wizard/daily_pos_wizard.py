@@ -235,41 +235,58 @@ class MbaDailyPosWizard(models.TransientModel):
         if 'stock.valuation.layer' not in self.env:
             return vacio
 
-        SVL = self.env['stock.valuation.layer']
+        svl_by_product = {}
+        salidas = self.env['account.move'].browse()
+        inventario_total = 0.0
+        grupos_inv = []
 
-        # ── Costo de ventas del periodo (capas hacia cliente) ───────────
-        salidas = SVL.search([
-            ('company_id', '=', self.company_id.id),
-            ('create_date', '>=', date_start),
-            ('create_date', '<=', date_end),
-            ('stock_move_id.location_dest_id.usage', '=', 'customer'),
-        ])
-        costo_ventas = -sum(salidas.mapped('value'))
-        utilidad = total_ventas - costo_ventas
-        margen = (utilidad / total_ventas * 100.0) if total_ventas else 0.0
+        if 'stock.valuation.layer' in self.env:
+            SVL = self.env['stock.valuation.layer']
 
-        # ── Inventario actual por categoria ─────────────────────────────
-        grupos_inv = SVL.read_group(
-            [('company_id', '=', self.company_id.id)],
-            ['remaining_value:sum'],
-            ['categ_id'],
-        )
-        inventario_total = sum(
-            (g.get('remaining_value') or 0.0) for g in grupos_inv
-        )
-
-        # ── Costo de ventas por categoria ───────────────────────────────
-        grupos_salidas = SVL.read_group(
-            [
+            salidas = SVL.search([
                 ('company_id', '=', self.company_id.id),
                 ('create_date', '>=', date_start),
                 ('create_date', '<=', date_end),
                 ('stock_move_id.location_dest_id.usage', '=', 'customer'),
-            ],
-            ['value:sum'],
-            ['categ_id'],
-        )
+            ])
+            for s in salidas:
+                pid = s.product_id.id
+                svl_by_product[pid] = svl_by_product.get(pid, 0.0) - s.value
 
+            grupos_inv = SVL.read_group(
+                [('company_id', '=', self.company_id.id)],
+                ['remaining_value:sum'],
+                ['categ_id'],
+            )
+            inventario_total = sum(
+                (g.get('remaining_value') or 0.0) for g in grupos_inv
+            )
+
+        # ── Costo de ventas agnóstico (SVL + Fallback standard_price) ──
+        costo_ventas = 0.0
+        used_pids = set()
+
+        if products:
+            for p in products:
+                pid = p.get('product_id')
+                qty = p.get('cantidad', 0.0)
+                used_pids.add(pid)
+                if pid in svl_by_product and svl_by_product[pid] > 0:
+                    p_cost = svl_by_product[pid]
+                else:
+                    prod_obj = self.env['product.product'].browse(pid) if pid else False
+                    p_cost = qty * (prod_obj.standard_price if prod_obj else 0.0)
+                p['costo'] = p_cost
+                costo_ventas += p_cost
+
+        for pid, val in svl_by_product.items():
+            if pid not in used_pids:
+                costo_ventas += val
+
+        utilidad = total_ventas - costo_ventas
+        margen = (utilidad / total_ventas * 100.0) if total_ventas else 0.0
+
+        # ── Desglose por categoría de producto ─────────────────────────
         categ_map = {}
         for g in grupos_inv:
             val = g.get('remaining_value') or 0.0
@@ -289,24 +306,6 @@ class MbaDailyPosWizard(models.TransientModel):
                 }
             categ_map[cid]['valor'] += val
 
-        for g in grupos_salidas:
-            val = -(g.get('value') or 0.0)
-            cid = g['categ_id'][0] if g.get('categ_id') else 0
-            cname = g['categ_id'][1] if g.get('categ_id') else _('Sin categoría')
-            if cid not in categ_map:
-                categ_map[cid] = {
-                    'categ_id': cid,
-                    'name': cname,
-                    'valor': 0.0,
-                    'ventas': 0.0,
-                    'costo': 0.0,
-                    'utilidad': 0.0,
-                    'margen_pct': 0.0,
-                    'porc': 0.0,
-                    'compras': 0.0,
-                }
-            categ_map[cid]['costo'] += val
-
         if products:
             for p in products:
                 cid = p.get('categ_id', 0)
@@ -324,6 +323,27 @@ class MbaDailyPosWizard(models.TransientModel):
                         'compras': 0.0,
                     }
                 categ_map[cid]['ventas'] += p.get('monto_bruto', 0.0)
+                categ_map[cid]['costo'] += p.get('costo', 0.0)
+
+        # Si hay capas SVL de productos no presentes en `products`
+        for pid, val in svl_by_product.items():
+            if pid not in used_pids:
+                prod = self.env['product.product'].browse(pid)
+                cid = prod.categ_id.id if prod and prod.categ_id else 0
+                cname = prod.categ_id.name if prod and prod.categ_id else _('Sin categoría')
+                if cid not in categ_map:
+                    categ_map[cid] = {
+                        'categ_id': cid,
+                        'name': cname,
+                        'valor': 0.0,
+                        'ventas': 0.0,
+                        'costo': 0.0,
+                        'utilidad': 0.0,
+                        'margen_pct': 0.0,
+                        'porc': 0.0,
+                        'compras': 0.0,
+                    }
+                categ_map[cid]['costo'] += val
 
         categorias = []
         for c in categ_map.values():
