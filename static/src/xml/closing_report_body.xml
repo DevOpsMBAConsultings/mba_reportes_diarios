@@ -26,28 +26,28 @@
                     <div class="o_mba_report_kpi o_mba_kpi_success">
                         <div class="o_mba_kpi_label">
                             Total Ventas
-                            <i class="fa fa-question-circle text-muted ms-1" title="Monto total neto cobrado/facturado con impuestos. Incluye facturas de venta menos notas de crédito."></i>
+                            <i class="fa fa-question-circle text-muted ms-1" data-tooltip="Monto total neto cobrado/facturado con impuestos. Incluye facturas de venta menos notas de crédito." title="Monto total neto cobrado/facturado con impuestos. Incluye facturas de venta menos notas de crédito."></i>
                         </div>
                         <div class="o_mba_kpi_value" t-esc="state.data.formatted_total_ventas"/>
                     </div>
                     <div class="o_mba_report_kpi o_mba_kpi_info">
                         <div class="o_mba_kpi_label">
                             Total Órdenes
-                            <i class="fa fa-question-circle text-muted ms-1" title="Total de transacciones procesadas en el período (incluye facturas de venta y notas de crédito)."></i>
+                            <i class="fa fa-question-circle text-muted ms-1" data-tooltip="Total de transacciones procesadas en el período (incluye facturas de venta y notas de crédito)." title="Total de transacciones procesadas en el período (incluye facturas de venta y notas de crédito)."></i>
                         </div>
                         <div class="o_mba_kpi_value" t-esc="state.data.total_ordenes"/>
                     </div>
                     <div class="o_mba_report_kpi">
                         <div class="o_mba_kpi_label">
                             Total ITBMS (Impuestos)
-                            <i class="fa fa-question-circle text-muted ms-1" title="Impuesto acumulado neto (ITBMS en ventas menos ITBMS deducido por notas de crédito)."></i>
+                            <i class="fa fa-question-circle text-muted ms-1" data-tooltip="Impuesto acumulado neto (ITBMS en ventas menos ITBMS deducido por notas de crédito)." title="Impuesto acumulado neto (ITBMS en ventas menos ITBMS deducido por notas de crédito)."></i>
                         </div>
                         <div class="o_mba_kpi_value" t-esc="state.data.formatted_total_impuestos"/>
                     </div>
                     <div class="o_mba_report_kpi">
                         <div class="o_mba_kpi_label">
                             Total Recaudado por Métodos
-                            <i class="fa fa-question-circle text-muted ms-1" title="Suma total de cobros recibidos clasificados por métodos de pago (Efectivo, ACH, Tarjeta, Crédito, etc.)."></i>
+                            <i class="fa fa-question-circle text-muted ms-1" data-tooltip="Suma total de cobros recibidos clasificados por métodos de pago (Efectivo, ACH, Tarjeta, Crédito, etc.)." title="Suma total de cobros recibidos clasificados por métodos de pago (Efectivo, ACH, Tarjeta, Crédito, etc.)."></i>
                         </div>
                         <div class="o_mba_kpi_value" t-esc="state.data.formatted_total_pagos"/>
                     </div>
@@ -55,14 +55,14 @@
                         <div class="o_mba_report_kpi">
                             <div class="o_mba_kpi_label">
                                 Costo de Ventas
-                                <i class="fa fa-question-circle text-muted ms-1" title="Costo agnóstico de los productos vendidos (basado en capas SVL de inventario o costo estándar del producto)."></i>
+                                <i class="fa fa-question-circle text-muted ms-1" data-tooltip="Costo agnóstico de los productos vendidos (basado en capas SVL de inventario o costo estándar del producto)." title="Costo agnóstico de los productos vendidos (basado en capas SVL de inventario o costo estándar del producto)."></i>
                             </div>
                             <div class="o_mba_kpi_value text-danger" t-esc="state.data.cost_inventory.formatted_costo_ventas"/>
                         </div>
                         <div class="o_mba_report_kpi o_mba_kpi_success">
                             <div class="o_mba_kpi_label">
                                 Utilidad Bruta
-                                <i class="fa fa-question-circle text-muted ms-1" title="Ganancia bruta obtenida: Ventas brutas sin impuestos menos el Costo de Ventas (% Margen Bruto)."></i>
+                                <i class="fa fa-question-circle text-muted ms-1" data-tooltip="Ganancia bruta obtenida: Ventas brutas sin impuestos menos el Costo de Ventas (% Margen Bruto)." title="Ganancia bruta obtenida: Ventas brutas sin impuestos menos el Costo de Ventas (% Margen Bruto)."></i>
                             </div>
                             <div class="o_mba_kpi_value">
                                 <t t-esc="state.data.cost_inventory.formatted_utilidad_bruta"/>
@@ -72,7 +72,7 @@
                         <div class="o_mba_report_kpi o_mba_kpi_info">
                             <div class="o_mba_kpi_label">
                                 Inventario Actual
-                                <i class="fa fa-question-circle text-muted ms-1" title="Valoración total acumulada del inventario físico en stock al corte del reporte."></i>
+                                <i class="fa fa-question-circle text-muted ms-1" data-tooltip="Valoración total acumulada del inventario físico en stock al corte del reporte." title="Valoración total acumulada del inventario físico en stock al corte del reporte."></i>
                             </div>
                             <div class="o_mba_kpi_value" t-esc="state.data.cost_inventory.formatted_inventario_total"/>
                         </div>
