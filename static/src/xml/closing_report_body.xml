@@ -89,6 +89,7 @@
                                     <i class="fa fa-chevron-right me-1 text-muted" t-if="isCollapsed('sessions')"></i>
                                     Sesiones POS del <t t-esc="state.data.is_range ? 'Mes' : 'Día'"/>
                                 </h3>
+                                <span class="badge bg-secondary" t-esc="(state.data.sessions ? state.data.sessions.length : 0) + ' Sesiones'"/>
                             </div>
                             <div t-if="!isCollapsed('sessions')">
                                 <table class="o_mba_report_table">
@@ -132,6 +133,7 @@
                                     <i class="fa fa-chevron-right me-1 text-muted" t-if="isCollapsed('payments')"></i>
                                     Desglose por Métodos de Pago
                                 </h3>
+                                <span class="o_mba_amount fw-bold text-primary" t-esc="state.data.formatted_total_pagos"/>
                             </div>
                             <div t-if="!isCollapsed('payments')">
                                 <table class="o_mba_report_table">
@@ -178,7 +180,10 @@
                             <i class="fa fa-chevron-right me-1 text-muted" t-if="isCollapsed('orders')"></i>
                             Detalle de Órdenes del <t t-esc="state.data.is_range ? 'Mes' : 'Día'"/>
                         </h3>
-                        <span class="badge bg-secondary" t-esc="(state.data.orders ? state.data.orders.length : 0) + ' Órdenes'"/>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-secondary" t-esc="(state.data.orders ? state.data.orders.length : 0) + ' Órdenes'"/>
+                            <span class="o_mba_amount fw-bold" t-if="state.data.order_totals" t-esc="state.data.order_totals.formatted_amount_total"/>
+                        </div>
                     </div>
                     <div t-if="!isCollapsed('orders')" class="table-responsive">
                         <table class="o_mba_report_table">
@@ -248,7 +253,10 @@
                             <i class="fa fa-chevron-right me-1 text-muted" t-if="isCollapsed('products')"></i>
                             Productos Vendidos en el <t t-esc="state.data.is_range ? 'Mes' : 'Día'"/>
                         </h3>
-                        <span class="badge bg-secondary" t-esc="(state.data.products ? state.data.products.length : 0) + ' Productos'"/>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-secondary" t-esc="(state.data.products ? state.data.products.length : 0) + ' Productos'"/>
+                            <span class="o_mba_amount fw-bold" t-if="state.data.prod_totals" t-esc="state.data.prod_totals.formatted_monto_neto"/>
+                        </div>
                     </div>
                     <div t-if="!isCollapsed('products')" class="table-responsive">
                         <table class="o_mba_report_table">
@@ -309,7 +317,14 @@
                                 <i class="fa fa-chevron-right me-1 text-muted" t-if="isCollapsed('inventory')"></i>
                                 Detalle de Inventario x Departamentos
                             </h3>
-                            <span class="badge bg-secondary" t-esc="(state.data.cost_inventory.inventario_categorias ? state.data.cost_inventory.inventario_categorias.length : 0) + ' Departamentos'"/>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-secondary" t-esc="(state.data.cost_inventory.inventario_categorias ? state.data.cost_inventory.inventario_categorias.length : 0) + ' Departamentos'"/>
+                                <t t-if="state.data.cost_inventory.totals">
+                                    <span class="small text-muted">Ventas: <strong t-esc="state.data.cost_inventory.totals.formatted_ventas"/></span>
+                                    <span class="small text-danger">Costo: <strong t-esc="state.data.cost_inventory.totals.formatted_costo"/></span>
+                                    <span class="small text-success">Utilidad: <strong t-esc="state.data.cost_inventory.totals.formatted_utilidad"/></span>
+                                </t>
+                            </div>
                         </div>
                         <div t-if="!isCollapsed('inventory')" class="table-responsive">
                             <table class="o_mba_report_table">
