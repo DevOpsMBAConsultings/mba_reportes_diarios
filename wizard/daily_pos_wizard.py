@@ -272,7 +272,6 @@ class MbaDailyPosWizard(models.TransientModel):
 
         # ── 1. Costo trazado por factura (Ventas fuera de caja) ─────────
         costo_ventas_trazado = {}
-        used_move_ids = set()
 
         if ventas_invoices and move_has_sale_line:
             for inv in ventas_invoices:
@@ -301,7 +300,6 @@ class MbaDailyPosWizard(models.TransientModel):
                         if total_qty > 0 and total_move_cost > 0:
                             unit_cost = total_move_cost / total_qty
                             p_cost = unit_cost * (line.quantity or 0.0) * sign
-                            used_move_ids.update(moves.ids)
 
                     if p_cost is None:
                         # Sin sale.order.line única y trazable: fallback
@@ -311,16 +309,38 @@ class MbaDailyPosWizard(models.TransientModel):
                     costo_ventas_trazado[pid] = costo_ventas_trazado.get(pid, 0.0) + p_cost
 
         # ── 2. Resto de salidas (POS + sin línea de venta asociada) ─────
-        svl_by_product = {}
-        salidas = SVL.search([
+        #
+        # La exclusión de lo ya trazado en el punto 1 se hace por una
+        # propiedad ESTRUCTURAL del movimiento (¿tiene sale_line_id o no?),
+        # nunca por "¿se trazó en ESTA llamada?". Es una distinción crítica:
+        # el Cierre Diario procesa un día a la vez, en llamadas separadas
+        # sin memoria entre sí. Si la exclusión dependiera de qué se trazó
+        # en la llamada actual (como en una versión anterior de este
+        # código), un movimiento vinculado a una línea de venta -pero cuya
+        # factura cae en OTRO día- no se excluiría aquí, y el reporte de
+        # ESE otro día (el de la validación de bodega) lo volvería a contar
+        # como huérfano, duplicando el costo entre los dos días.
+        #
+        # Con el filtro estructural, cualquier movimiento con sale_line_id
+        # queda SIEMPRE fuera de este heurístico de día+producto, sin
+        # importar si su factura fue procesada en esta llamada o no. Ese
+        # costo únicamente puede salir por el punto 1, el día en que se
+        # genere el reporte de SU factura. Si esa factura nunca se procesó
+        # (queda fuera del rango consultado), el costo simplemente no
+        # aparece en este reporte — correcto, porque el objetivo es que el
+        # costo viva en la fecha de la factura, no en la de la entrega.
+        svl_domain = [
             ('company_id', '=', self.company_id.id),
             ('create_date', '>=', date_start),
             ('create_date', '<=', date_end),
             ('stock_move_id.location_dest_id.usage', '=', 'customer'),
-        ])
+        ]
+        if move_has_sale_line:
+            svl_domain.append(('stock_move_id.sale_line_id', '=', False))
+
+        svl_by_product = {}
+        salidas = SVL.search(svl_domain)
         for s in salidas:
-            if s.stock_move_id.id in used_move_ids:
-                continue
             pid = s.product_id.id
             svl_by_product[pid] = svl_by_product.get(pid, 0.0) - s.value
 
