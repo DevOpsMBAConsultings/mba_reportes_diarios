@@ -98,9 +98,7 @@
                                         <th>Factura / Orden</th>
                                         <th>Fecha</th>
                                         <th>Cliente</th>
-                                        <th>Producto</th>
                                         <th class="text-end">Monto Venta Base</th>
-                                        <th>Regla Comisión</th>
                                         <th>Estado Cobro</th>
                                         <th>Estado Liquidación</th>
                                         <th class="text-end">Comisión Ganada</th>
@@ -109,7 +107,7 @@
                                 <tbody>
                                     <t t-if="!state.data.agents || state.data.agents.length === 0">
                                         <tr>
-                                            <td colspan="10" class="text-center py-4 text-muted">
+                                            <td colspan="8" class="text-center py-4 text-muted">
                                                 No se encontraron registros de comisiones para el periodo seleccionado.
                                             </td>
                                         </tr>
@@ -121,21 +119,21 @@
                                             <td class="text-center">
                                                 <i t-att-class="state.expanded[ag.agent_id] ? 'fa fa-caret-down o_mba_caret' : 'fa fa-caret-right o_mba_caret'"/>
                                             </td>
-                                            <td colspan="4">
+                                            <td colspan="3">
                                                 <strong class="fs-6 text-primary" t-esc="ag.agent_name"/>
-                                                <span class="badge rounded-pill bg-light text-dark ms-2" t-esc="ag.count + ' líneas'"/>
+                                                <span class="badge rounded-pill bg-light text-dark ms-2" t-esc="ag.lines.length + ' facturas'"/>
                                             </td>
                                             <td class="o_mba_amount fw-bold" t-esc="ag.formatted_sales_total"/>
-                                            <td colspan="3" class="text-end small">
+                                            <td colspan="2" class="text-end small">
                                                 <span class="text-warning me-2">Pendiente: <t t-esc="ag.formatted_pending_total"/></span>
                                                 <span class="text-success">Liquidada: <t t-esc="ag.formatted_settled_total"/></span>
                                             </td>
                                             <td class="o_mba_amount text-success fs-6 fw-bold" t-esc="ag.formatted_commission_total"/>
                                         </tr>
 
-                                        <!-- Group Details (if expanded) -->
+                                        <!-- Group Details (if expanded): una fila por factura -->
                                         <t t-if="state.expanded[ag.agent_id]">
-                                            <t t-foreach="ag.lines" t-as="l" t-key="l.agent_line_id">
+                                            <t t-foreach="ag.lines" t-as="l" t-key="l.invoice_id || l.invoice_name">
                                                 <tr class="o_mba_detail_row">
                                                     <td></td>
                                                     <td>
@@ -154,21 +152,15 @@
                                                             <t t-esc="l.partner_name"/>
                                                         </t>
                                                     </td>
-                                                    <td>
-                                                        <t t-if="l.product_id">
-                                                            <span class="o_mba_link" t-on-click="() => this.openProduct(l.product_id)">
-                                                                <t t-esc="l.product_name"/>
-                                                            </span>
-                                                        </t>
-                                                        <t t-else="">
-                                                            <t t-esc="l.product_name"/>
-                                                        </t>
-                                                    </td>
                                                     <td class="o_mba_amount" t-esc="l.formatted_price_subtotal"/>
-                                                    <td><span class="badge bg-light text-dark border" t-esc="l.commission_name"/></td>
                                                     <td><span class="badge bg-info" t-esc="l.payment_state"/></td>
-                                                    <td>
-                                                        <span t-att-class="l.settled ? 'badge bg-success' : 'badge bg-warning text-dark'" t-esc="l.settled_label"/>
+                                                    <td class="text-end small">
+                                                        <t t-if="l.pending_amount">
+                                                            <span class="text-warning me-1">Pend: <t t-esc="l.formatted_pending_amount"/></span>
+                                                        </t>
+                                                        <t t-if="l.settled_amount">
+                                                            <span class="text-success">Liq: <t t-esc="l.formatted_settled_amount"/></span>
+                                                        </t>
                                                     </td>
                                                     <td class="o_mba_amount fw-bold text-success" t-esc="l.formatted_amount"/>
                                                 </tr>
@@ -178,9 +170,9 @@
                                 </tbody>
                                 <tfoot>
                                     <tr class="o_mba_total_row">
-                                        <td colspan="5" class="text-end">TOTALES GENERALES:</td>
+                                        <td colspan="4" class="text-end">TOTALES GENERALES:</td>
                                         <td class="o_mba_amount" t-esc="state.data.formatted_total_sales"/>
-                                        <td colspan="3" class="text-end small">
+                                        <td colspan="2" class="text-end small">
                                             <span class="text-warning me-2">Pendientes: <t t-esc="state.data.formatted_total_pending"/></span>
                                             <span class="text-success">Liquidadas: <t t-esc="state.data.formatted_total_settled"/></span>
                                         </td>

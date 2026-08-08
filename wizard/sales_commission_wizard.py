@@ -116,7 +116,7 @@ class MbaSalesCommissionWizard(models.TransientModel):
                     'pending_total': 0.0,
                     'settled_total': 0.0,
                     'count': 0,
-                    'lines': [],
+                    'invoices_map': {},
                 }
 
             inv_line = line.object_id
@@ -143,22 +143,48 @@ class MbaSalesCommissionWizard(models.TransientModel):
                 inv._fields['payment_state'].selection
             ).get(inv.payment_state, inv.payment_state) if inv else ''
 
-            agents_map[agent_key]['lines'].append({
-                'agent_line_id': line.id,
-                'invoice_id': inv.id if inv else False,
-                'invoice_name': inv.name if inv else '',
-                'invoice_date': str(line.invoice_date) if line.invoice_date else '',
-                'partner_id': inv.partner_id.id if inv and inv.partner_id else False,
-                'partner_name': inv.partner_id.name if inv and inv.partner_id else '',
-                'product_id': inv_line.product_id.id if inv_line and inv_line.product_id else False,
-                'product_name': inv_line.product_id.name if inv_line and inv_line.product_id else '',
-                'price_subtotal': sale_subtotal * sign,
-                'commission_name': line.commission_id.name if line.commission_id else '',
-                'amount': amount,
-                'payment_state': pay_state_label,
-                'settled': line.settled,
-                'settled_label': _('Liquidada') if line.settled else _('Pendiente'),
-            })
+            # Agrupar por factura: una sola fila por invoice_id, sumando
+            # las comisiones de todas sus líneas/productos.
+            inv_key = inv.id if inv else line.id
+            invoices_map = agents_map[agent_key]['invoices_map']
+            if inv_key not in invoices_map:
+                invoices_map[inv_key] = {
+                    'invoice_id': inv.id if inv else False,
+                    'invoice_name': inv.name if inv else '',
+                    'invoice_date': str(line.invoice_date) if line.invoice_date else '',
+                    'partner_id': inv.partner_id.id if inv and inv.partner_id else False,
+                    'partner_name': inv.partner_id.name if inv and inv.partner_id else '',
+                    'price_subtotal': 0.0,
+                    'amount': 0.0,
+                    'pending_amount': 0.0,
+                    'settled_amount': 0.0,
+                    'payment_state': pay_state_label,
+                    'settled': True,
+                }
+
+            inv_group = invoices_map[inv_key]
+            inv_group['price_subtotal'] += sale_subtotal * sign
+            inv_group['amount'] += amount
+            if line.settled:
+                inv_group['settled_amount'] += amount
+            else:
+                inv_group['pending_amount'] += amount
+                # Si alguna línea de la factura está pendiente, la factura
+                # se considera pendiente (mezcla) para el badge de estado.
+                inv_group['settled'] = False
+
+        for agent_data in agents_map.values():
+            invoice_lines = sorted(
+                agent_data['invoices_map'].values(),
+                key=lambda i: i['invoice_date'],
+            )
+            for inv_group in invoice_lines:
+                inv_group['settled_label'] = (
+                    _('Liquidada') if inv_group['settled']
+                    else (_('Parcial') if inv_group['settled_amount'] else _('Pendiente'))
+                )
+            agent_data['lines'] = invoice_lines
+            del agent_data['invoices_map']
 
         agents_list = sorted(agents_map.values(), key=lambda a: a['commission_total'], reverse=True)
 
@@ -217,6 +243,8 @@ class MbaSalesCommissionWizard(models.TransientModel):
             for l in agent['lines']:
                 l['formatted_price_subtotal'] = wizard.fmt(l['price_subtotal'])
                 l['formatted_amount'] = wizard.fmt(l['amount'])
+                l['formatted_pending_amount'] = wizard.fmt(l['pending_amount'])
+                l['formatted_settled_amount'] = wizard.fmt(l['settled_amount'])
 
         return {
             'oca_installed': True,
