@@ -194,7 +194,7 @@ class MbaDailyPosWizard(models.TransientModel):
 
     # ── Costo de ventas, utilidad e inventario ──────────────────────────────
 
-    def _get_cost_and_inventory(self, date_start, date_end, total_ventas, products=None):
+    def _get_cost_and_inventory(self, date_start, date_end, total_ventas, products=None, ventas_invoices=None):
         """
         Costo de ventas del periodo, utilidad bruta e inventario actual,
         y desglose por categoría de producto (departamento).
@@ -203,6 +203,37 @@ class MbaDailyPosWizard(models.TransientModel):
         porque este modulo solo depende de 'account': si no hay valuacion
         instalada o configurada, devuelve ceros y el reporte lo avisa en vez
         de fallar.
+
+        Atribución de costo (dos fuentes que NUNCA se solapan):
+
+        1. Ventas fuera de caja (facturas en `ventas_invoices`): por cada
+           línea de factura se sigue la cadena factura -> sale.order.line ->
+           stock.move -> stock.valuation.layer, y el costo hereda la fecha
+           de la FACTURA sin importar cuándo se validó la entrega en el
+           sistema. Esto es lo que corrige el defase (caso S00053: entrega
+           validada un día después de la factura).
+
+           Se usa un costo UNITARIO promedio (costo total de los
+           movimientos de esa línea de venta / cantidad total entregada) en
+           vez de "sumar todos los movimientos por cada línea de factura",
+           porque una misma orden puede facturarse en partes (facturación
+           parcial); sumar el costo completo del movimiento en cada factura
+           parcial lo duplicaría. Multiplicar el costo unitario por la
+           cantidad de ESA línea evita el doble conteo sin necesidad de
+           llevar un registro de "qué ya se usó" entre facturas.
+
+           Si la línea de factura no tiene exactamente una sale.order.line
+           detrás (factura manual sin orden de venta, o el raro caso de
+           varias líneas de venta consolidadas en una), se cae directo a
+           standard_price: mejor un número conservador y predecible que
+           inventar un prorrateo.
+
+        2. Todo lo demás (POS + cualquier salida de stock sin línea de venta
+           asociada): se mantiene el heurístico histórico (producto + día de
+           creación de la capa de valoración), EXCLUYENDO los movimientos ya
+           explicados en el punto 1 para no contar el mismo costo dos veces.
+           Para POS esto es razonable porque la entrega normalmente se valida
+           el mismo día que la orden.
         """
         vacio = {
             'available': False,
@@ -235,34 +266,74 @@ class MbaDailyPosWizard(models.TransientModel):
         if 'stock.valuation.layer' not in self.env:
             return vacio
 
+        SVL = self.env['stock.valuation.layer']
+        StockMove = self.env['stock.move']
+        move_has_sale_line = 'sale_line_id' in StockMove._fields
+
+        # ── 1. Costo trazado por factura (Ventas fuera de caja) ─────────
+        costo_ventas_trazado = {}
+        used_move_ids = set()
+
+        if ventas_invoices and move_has_sale_line:
+            for inv in ventas_invoices:
+                sign = 1 if inv.move_type == 'out_invoice' else -1
+                for line in inv.invoice_line_ids:
+                    if not line.product_id:
+                        continue
+                    if line.display_type in ('line_section', 'line_note'):
+                        continue
+
+                    pid = line.product_id.id
+                    sale_lines = (
+                        line.sale_line_ids
+                        if 'sale_line_ids' in line._fields
+                        else self.env['sale.order.line']
+                    )
+
+                    p_cost = None
+                    if len(sale_lines) == 1:
+                        moves = sale_lines.move_ids.filtered(
+                            lambda m: m.state == 'done'
+                            and m.location_dest_id.usage == 'customer'
+                        )
+                        total_qty = sum(moves.mapped('quantity'))
+                        total_move_cost = -sum(moves.stock_valuation_layer_ids.mapped('value'))
+                        if total_qty > 0 and total_move_cost > 0:
+                            unit_cost = total_move_cost / total_qty
+                            p_cost = unit_cost * (line.quantity or 0.0) * sign
+                            used_move_ids.update(moves.ids)
+
+                    if p_cost is None:
+                        # Sin sale.order.line única y trazable: fallback
+                        # directo a standard_price (ver docstring).
+                        p_cost = (line.quantity or 0.0) * sign * (line.product_id.standard_price or 0.0)
+
+                    costo_ventas_trazado[pid] = costo_ventas_trazado.get(pid, 0.0) + p_cost
+
+        # ── 2. Resto de salidas (POS + sin línea de venta asociada) ─────
         svl_by_product = {}
-        salidas = self.env['account.move'].browse()
-        inventario_total = 0.0
-        grupos_inv = []
+        salidas = SVL.search([
+            ('company_id', '=', self.company_id.id),
+            ('create_date', '>=', date_start),
+            ('create_date', '<=', date_end),
+            ('stock_move_id.location_dest_id.usage', '=', 'customer'),
+        ])
+        for s in salidas:
+            if s.stock_move_id.id in used_move_ids:
+                continue
+            pid = s.product_id.id
+            svl_by_product[pid] = svl_by_product.get(pid, 0.0) - s.value
 
-        if 'stock.valuation.layer' in self.env:
-            SVL = self.env['stock.valuation.layer']
+        grupos_inv = SVL.read_group(
+            [('company_id', '=', self.company_id.id)],
+            ['remaining_value:sum'],
+            ['categ_id'],
+        )
+        inventario_total = sum(
+            (g.get('remaining_value') or 0.0) for g in grupos_inv
+        )
 
-            salidas = SVL.search([
-                ('company_id', '=', self.company_id.id),
-                ('create_date', '>=', date_start),
-                ('create_date', '<=', date_end),
-                ('stock_move_id.location_dest_id.usage', '=', 'customer'),
-            ])
-            for s in salidas:
-                pid = s.product_id.id
-                svl_by_product[pid] = svl_by_product.get(pid, 0.0) - s.value
-
-            grupos_inv = SVL.read_group(
-                [('company_id', '=', self.company_id.id)],
-                ['remaining_value:sum'],
-                ['categ_id'],
-            )
-            inventario_total = sum(
-                (g.get('remaining_value') or 0.0) for g in grupos_inv
-            )
-
-        # ── Costo de ventas agnóstico (SVL + Fallback standard_price) ──
+        # ── Costo de ventas: traza + SVL restante + fallback standard_price ──
         costo_ventas = 0.0
         used_pids = set()
 
@@ -271,15 +342,24 @@ class MbaDailyPosWizard(models.TransientModel):
                 pid = p.get('product_id')
                 qty = p.get('cantidad', 0.0)
                 used_pids.add(pid)
-                if pid in svl_by_product and svl_by_product[pid] > 0:
-                    p_cost = svl_by_product[pid]
+
+                traced = costo_ventas_trazado.get(pid, 0.0)
+                leftover = svl_by_product.get(pid, 0.0)
+                leftover = leftover if leftover > 0 else 0.0
+
+                if traced or leftover:
+                    p_cost = traced + leftover
                 else:
                     prod_obj = self.env['product.product'].browse(pid) if pid else False
                     p_cost = qty * (prod_obj.standard_price if prod_obj else 0.0)
+
                 p['costo'] = p_cost
                 costo_ventas += p_cost
 
         for pid, val in svl_by_product.items():
+            if pid not in used_pids:
+                costo_ventas += val
+        for pid, val in costo_ventas_trazado.items():
             if pid not in used_pids:
                 costo_ventas += val
 
@@ -325,8 +405,8 @@ class MbaDailyPosWizard(models.TransientModel):
                 categ_map[cid]['ventas'] += p.get('monto_bruto', 0.0)
                 categ_map[cid]['costo'] += p.get('costo', 0.0)
 
-        # Si hay capas SVL de productos no presentes en `products`
-        for pid, val in svl_by_product.items():
+        # Si hay costo (trazado o SVL) de productos no presentes en `products`
+        for pid, val in list(svl_by_product.items()) + list(costo_ventas_trazado.items()):
             if pid not in used_pids:
                 prod = self.env['product.product'].browse(pid)
                 cid = prod.categ_id.id if prod and prod.categ_id else 0
@@ -639,7 +719,8 @@ class MbaDailyPosWizard(models.TransientModel):
         }
 
         cost_inventory = self._get_cost_and_inventory(
-            date_start, date_end, total_sin_impuesto, products
+            date_start, date_end, total_sin_impuesto, products,
+            ventas_invoices=invoices,
         )
 
         return {
