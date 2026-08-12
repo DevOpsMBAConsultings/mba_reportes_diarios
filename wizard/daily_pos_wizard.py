@@ -344,14 +344,44 @@ class MbaDailyPosWizard(models.TransientModel):
             pid = s.product_id.id
             svl_by_product[pid] = svl_by_product.get(pid, 0.0) - s.value
 
+        # ── Valoración de inventario total y por categoría desde stock.quant ──
+        # Se prefiere stock.quant (ubicaciones internas) porque refleja la existencia
+        # física real multiplicada por standard_price, cubriendo inventarios iniciales
+        # o cargas masivas que no hayan generado capas históricas en SVL.
+        # Fallback a SVL (remaining_value) si stock.quant no arroja resultados.
+        StockQuant = self.env['stock.quant']
+        quants = StockQuant.search([
+            ('company_id', '=', self.company_id.id),
+            ('location_id.usage', '=', 'internal'),
+            ('quantity', '>', 0),
+        ])
+
+        categ_quant_val = {}
+        if quants:
+            for q in quants:
+                cid = q.product_id.categ_id.id if q.product_id and q.product_id.categ_id else 0
+                cname = (
+                    q.product_id.categ_id.complete_name or q.product_id.categ_id.name
+                    if q.product_id and q.product_id.categ_id
+                    else _('Sin categoría')
+                )
+                val = q.quantity * (q.product_id.standard_price or 0.0)
+                if cid not in categ_quant_val:
+                    categ_quant_val[cid] = {'name': cname, 'valor': 0.0}
+                categ_quant_val[cid]['valor'] += val
+
         grupos_inv = SVL.read_group(
             [('company_id', '=', self.company_id.id)],
             ['remaining_value:sum'],
             ['categ_id'],
         )
-        inventario_total = sum(
-            (g.get('remaining_value') or 0.0) for g in grupos_inv
-        )
+        
+        if categ_quant_val:
+            inventario_total = sum(item['valor'] for item in categ_quant_val.values())
+        else:
+            inventario_total = sum(
+                (g.get('remaining_value') or 0.0) for g in grupos_inv
+            )
 
         # ── Costo de ventas: traza + SVL restante + fallback standard_price ──
         costo_ventas = 0.0
@@ -388,15 +418,12 @@ class MbaDailyPosWizard(models.TransientModel):
 
         # ── Desglose por categoría de producto ─────────────────────────
         categ_map = {}
-        for g in grupos_inv:
-            val = g.get('remaining_value') or 0.0
-            cid = g['categ_id'][0] if g.get('categ_id') else 0
-            cname = g['categ_id'][1] if g.get('categ_id') else _('Sin categoría')
-            if cid not in categ_map:
+        if categ_quant_val:
+            for cid, data in categ_quant_val.items():
                 categ_map[cid] = {
                     'categ_id': cid,
-                    'name': cname,
-                    'valor': 0.0,
+                    'name': data['name'],
+                    'valor': data['valor'],
                     'ventas': 0.0,
                     'costo': 0.0,
                     'utilidad': 0.0,
@@ -404,7 +431,24 @@ class MbaDailyPosWizard(models.TransientModel):
                     'porc': 0.0,
                     'compras': 0.0,
                 }
-            categ_map[cid]['valor'] += val
+        else:
+            for g in grupos_inv:
+                val = g.get('remaining_value') or 0.0
+                cid = g['categ_id'][0] if g.get('categ_id') else 0
+                cname = g['categ_id'][1] if g.get('categ_id') else _('Sin categoría')
+                if cid not in categ_map:
+                    categ_map[cid] = {
+                        'categ_id': cid,
+                        'name': cname,
+                        'valor': 0.0,
+                        'ventas': 0.0,
+                        'costo': 0.0,
+                        'utilidad': 0.0,
+                        'margen_pct': 0.0,
+                        'porc': 0.0,
+                        'compras': 0.0,
+                    }
+                categ_map[cid]['valor'] += val
 
         if products:
             for p in products:
