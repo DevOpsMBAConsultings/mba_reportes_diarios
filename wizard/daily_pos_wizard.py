@@ -351,7 +351,6 @@ class MbaDailyPosWizard(models.TransientModel):
         # Fallback a SVL (remaining_value) si stock.quant no arroja resultados.
         StockQuant = self.env['stock.quant']
         quants = StockQuant.search([
-            ('company_id', '=', self.company_id.id),
             ('location_id.usage', '=', 'internal'),
             ('quantity', '>', 0),
         ])
