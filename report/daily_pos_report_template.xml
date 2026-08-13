@@ -160,9 +160,31 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>Inventario Actual :</td>
+                                    <td>Inventario Neto (Odoo) :</td>
                                     <td style="text-align: right; font-weight: bold;">
                                         <t t-esc="data['cost_inventory']['formatted_inventario_total']"/>
+                                    </td>
+                                    <td/>
+                                    <td>Stock Físico en Bodega :</td>
+                                    <td style="text-align: right;">
+                                        <t t-esc="data['cost_inventory']['formatted_fisico_bruto']"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Déficit Vtas. Negativas :</td>
+                                    <td style="text-align: right; color: #d9534f;">
+                                        -<t t-esc="data['cost_inventory']['formatted_deficit_negativo']"/>
+                                    </td>
+                                    <td/>
+                                    <td>Compras en Tránsito :</td>
+                                    <td style="text-align: right; color: #0275d8;">
+                                        +<t t-esc="data['cost_inventory']['formatted_compras_transito']"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: bold;">Inv. Operativo Proyectado :</td>
+                                    <td style="text-align: right; font-weight: bold; color: #2E7D32;">
+                                        <t t-esc="data['cost_inventory']['formatted_inventario_operativo']"/>
                                     </td>
                                     <td/>
                                     <td/>

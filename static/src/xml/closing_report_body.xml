@@ -69,12 +69,33 @@
                                 <small class="text-muted" style="font-size: 65%;"> (<t t-esc="state.data.cost_inventory.formatted_margen_pct"/>)</small>
                             </div>
                         </div>
+                        <div class="o_mba_report_kpi">
+                            <div class="o_mba_kpi_label">
+                                Físico en Bodega (Stock > 0)
+                                <i class="fa fa-question-circle text-muted ms-1" data-tooltip="Valor total de la mercancía depositada físicamente en repisas." title="Valor total de la mercancía depositada físicamente en repisas."></i>
+                            </div>
+                            <div class="o_mba_kpi_value" t-esc="state.data.cost_inventory.formatted_fisico_bruto"/>
+                        </div>
+                        <div class="o_mba_report_kpi">
+                            <div class="o_mba_kpi_label">
+                                Déficit Vtas. Negativas
+                                <i class="fa fa-question-circle text-muted ms-1" data-tooltip="Valor de los productos facturados/despachados en saldo negativo." title="Valor de los productos facturados/despachados en saldo negativo."></i>
+                            </div>
+                            <div class="o_mba_kpi_value text-danger" t-esc="'- ' + state.data.cost_inventory.formatted_deficit_negativo"/>
+                        </div>
+                        <div class="o_mba_report_kpi">
+                            <div class="o_mba_kpi_label">
+                                Compras en Tránsito
+                                <i class="fa fa-question-circle text-muted ms-1" data-tooltip="Compras confirmadas pendientes de recibir." title="Compras confirmadas pendientes de recibir."></i>
+                            </div>
+                            <div class="o_mba_kpi_value text-primary" t-esc="'+ ' + state.data.cost_inventory.formatted_compras_transito"/>
+                        </div>
                         <div class="o_mba_report_kpi o_mba_kpi_info">
                             <div class="o_mba_kpi_label">
-                                Inventario Actual
-                                <i class="fa fa-question-circle text-muted ms-1" data-tooltip="Valoración total acumulada del inventario físico en stock al corte del reporte." title="Valoración total acumulada del inventario físico en stock al corte del reporte."></i>
+                                Inv. Operativo Proyectado
+                                <i class="fa fa-question-circle text-muted ms-1" data-tooltip="Inventario Físico + Compras en Tránsito - Déficit Negativo." title="Inventario Físico + Compras en Tránsito - Déficit Negativo."></i>
                             </div>
-                            <div class="o_mba_kpi_value" t-esc="state.data.cost_inventory.formatted_inventario_total"/>
+                            <div class="o_mba_kpi_value text-success fw-bold" t-esc="state.data.cost_inventory.formatted_inventario_operativo"/>
                         </div>
                     </t>
                 </div>

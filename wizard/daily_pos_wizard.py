@@ -344,30 +344,68 @@ class MbaDailyPosWizard(models.TransientModel):
             pid = s.product_id.id
             svl_by_product[pid] = svl_by_product.get(pid, 0.0) - s.value
 
-        # ── Valoración de inventario total y por categoría desde stock.quant ──
-        # Se prefiere stock.quant (ubicaciones internas) porque refleja la existencia
-        # física real multiplicada por standard_price, cubriendo inventarios iniciales
-        # o cargas masivas que no hayan generado capas históricas en SVL.
-        # Fallback a SVL (remaining_value) si stock.quant no arroja resultados.
+        # ── Valoración de inventario desglosada desde stock.quant ──
         StockQuant = self.env['stock.quant']
-        quants = StockQuant.search([
+        quants_all = StockQuant.search([
             ('location_id.usage', '=', 'internal'),
-            ('quantity', '>', 0),
         ])
 
+        inventario_fisico_bruto = 0.0
+        inventario_deficit_negativo = 0.0
         categ_quant_val = {}
-        if quants:
-            for q in quants:
+        categ_compras_val = {}
+
+        if quants_all:
+            for q in quants_all:
                 cid = q.product_id.categ_id.id if q.product_id and q.product_id.categ_id else 0
                 cname = (
                     q.product_id.categ_id.complete_name or q.product_id.categ_id.name
                     if q.product_id and q.product_id.categ_id
                     else _('Sin categoría')
                 )
-                val = q.quantity * (q.product_id.standard_price or 0.0)
+                cost = q.product_id.standard_price or 0.0
+                val = q.quantity * cost
+
+                if q.quantity > 0:
+                    inventario_fisico_bruto += val
+                else:
+                    inventario_deficit_negativo += abs(val)
+
                 if cid not in categ_quant_val:
                     categ_quant_val[cid] = {'name': cname, 'valor': 0.0}
                 categ_quant_val[cid]['valor'] += val
+
+        # ── Compras recibidas hoy e inventario en tránsito por categoría ──
+        in_transit_total = 0.0
+        if 'purchase.order.line' in self.env:
+            POLine = self.env['purchase.order.line']
+            po_lines = POLine.search([
+                ('order_id.state', 'in', ('purchase', 'done')),
+                ('company_id', '=', self.company_id.id),
+            ])
+            for pol in po_lines:
+                qty_pending = (pol.product_qty or 0.0) - (pol.qty_received or 0.0)
+                if qty_pending > 0:
+                    cid = pol.product_id.categ_id.id if pol.product_id and pol.product_id.categ_id else 0
+                    val_transit = qty_pending * (pol.price_unit or 0.0)
+                    in_transit_total += val_transit
+                    categ_compras_val[cid] = categ_compras_val.get(cid, 0.0) + val_transit
+
+        # También sumar las compras ingresadas (recepciones validadas en el período)
+        if 'stock.picking' in self.env:
+            StockPicking = self.env['stock.picking']
+            pickings = StockPicking.search([
+                ('picking_type_id.code', '=', 'incoming'),
+                ('state', '=', 'done'),
+                ('date_done', '>=', date_start),
+                ('date_done', '<=', date_end),
+                ('company_id', '=', self.company_id.id),
+            ])
+            for sp in pickings:
+                for sm in sp.move_ids.filtered(lambda m: m.state == 'done'):
+                    cid = sm.product_id.categ_id.id if sm.product_id and sm.product_id.categ_id else 0
+                    val_rec = (sm.quantity or 0.0) * (sm.price_unit or sm.product_id.standard_price or 0.0)
+                    categ_compras_val[cid] = categ_compras_val.get(cid, 0.0) + val_rec
 
         grupos_inv = SVL.read_group(
             [('company_id', '=', self.company_id.id)],
@@ -428,7 +466,7 @@ class MbaDailyPosWizard(models.TransientModel):
                     'utilidad': 0.0,
                     'margen_pct': 0.0,
                     'porc': 0.0,
-                    'compras': 0.0,
+                    'compras': categ_compras_val.get(cid, 0.0),
                 }
         else:
             for g in grupos_inv:
@@ -445,7 +483,7 @@ class MbaDailyPosWizard(models.TransientModel):
                         'utilidad': 0.0,
                         'margen_pct': 0.0,
                         'porc': 0.0,
-                        'compras': 0.0,
+                        'compras': categ_compras_val.get(cid, 0.0),
                     }
                 categ_map[cid]['valor'] += val
 
@@ -463,7 +501,7 @@ class MbaDailyPosWizard(models.TransientModel):
                         'utilidad': 0.0,
                         'margen_pct': 0.0,
                         'porc': 0.0,
-                        'compras': 0.0,
+                        'compras': categ_compras_val.get(cid, 0.0),
                     }
                 categ_map[cid]['ventas'] += p.get('monto_bruto', 0.0)
                 categ_map[cid]['costo'] += p.get('costo', 0.0)
@@ -484,13 +522,13 @@ class MbaDailyPosWizard(models.TransientModel):
                         'utilidad': 0.0,
                         'margen_pct': 0.0,
                         'porc': 0.0,
-                        'compras': 0.0,
+                        'compras': categ_compras_val.get(cid, 0.0),
                     }
                 categ_map[cid]['costo'] += val
 
         categorias = []
         for c in categ_map.values():
-            if not (c['valor'] or c['ventas'] or c['costo']):
+            if not (c['valor'] or c['ventas'] or c['costo'] or c['compras']):
                 continue
             c['utilidad'] = c['ventas'] - c['costo']
             c['margen_pct'] = (
@@ -521,6 +559,8 @@ class MbaDailyPosWizard(models.TransientModel):
             if total_ventas_cat else 0.0
         )
 
+        inv_operativo = inventario_fisico_bruto + in_transit_total - inventario_deficit_negativo
+
         return {
             'available': True,
             'costo_ventas': costo_ventas,
@@ -531,10 +571,26 @@ class MbaDailyPosWizard(models.TransientModel):
             'formatted_margen_pct': '{:.2f}%'.format(margen),
             'inventario_total': inventario_total,
             'formatted_inventario_total': self.fmt(inventario_total),
+            'fisico_bruto': inventario_fisico_bruto,
+            'formatted_fisico_bruto': self.fmt(inventario_fisico_bruto),
+            'deficit_negativo': inventario_deficit_negativo,
+            'formatted_deficit_negativo': self.fmt(inventario_deficit_negativo),
+            'compras_transito': in_transit_total,
+            'formatted_compras_transito': self.fmt(in_transit_total),
+            'inventario_operativo': inv_operativo,
+            'formatted_inventario_operativo': self.fmt(inv_operativo),
             'inventario_categorias': categorias,
             'totals': {
                 'valor': inventario_total,
                 'formatted_valor': self.fmt(inventario_total),
+                'fisico_bruto': inventario_fisico_bruto,
+                'formatted_fisico_bruto': self.fmt(inventario_fisico_bruto),
+                'deficit_negativo': inventario_deficit_negativo,
+                'formatted_deficit_negativo': self.fmt(inventario_deficit_negativo),
+                'compras_transito': in_transit_total,
+                'formatted_compras_transito': self.fmt(in_transit_total),
+                'inventario_operativo': inv_operativo,
+                'formatted_inventario_operativo': self.fmt(inv_operativo),
                 'porc': 100.0 if inventario_total else 0.0,
                 'formatted_porc': '100.00%' if inventario_total else '0.00%',
                 'ventas': total_ventas_cat,
