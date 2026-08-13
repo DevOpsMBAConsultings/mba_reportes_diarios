@@ -21,8 +21,8 @@
             </t>
 
             <t t-else="">
-                <!-- KPI Summary Cards -->
-                <div class="o_mba_report_kpis">
+                <!-- Fila 1: KPIs de Ventas y Resultados -->
+                <div class="o_mba_report_kpis mb-1">
                     <div class="o_mba_report_kpi o_mba_kpi_success">
                         <div class="o_mba_kpi_label">
                             Total Ventas
@@ -69,6 +69,12 @@
                                 <small class="text-muted" style="font-size: 65%;"> (<t t-esc="state.data.cost_inventory.formatted_margen_pct"/>)</small>
                             </div>
                         </div>
+                    </t>
+                </div>
+
+                <!-- Fila 2: KPIs de Inventario Operativo -->
+                <t t-if="state.data.cost_inventory and state.data.cost_inventory.available">
+                    <div class="o_mba_report_kpis border-top-0 pt-0">
                         <div class="o_mba_report_kpi">
                             <div class="o_mba_kpi_label">
                                 Físico en Bodega (Stock > 0)
@@ -97,8 +103,8 @@
                             </div>
                             <div class="o_mba_kpi_value text-success fw-bold" t-esc="state.data.cost_inventory.formatted_inventario_operativo"/>
                         </div>
-                    </t>
-                </div>
+                    </div>
+                </t>
 
                 <!-- Table 1: Sesiones POS y Métodos de Pago -->
                 <div class="row">
