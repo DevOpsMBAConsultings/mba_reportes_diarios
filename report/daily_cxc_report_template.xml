@@ -41,10 +41,23 @@
                              TÍTULO DEL REPORTE
                              ════════════════════════════════════════════ -->
                         <h4 style="font-size: 14px; margin-top: 15px; margin-bottom: 5px; color: #1F4E79;">
-                            <strong>Reporte Diario de Entradas / Cobros de CxC</strong>
+                            <t t-if="data['is_range']">
+                                <strong>Reporte Mensual / Período de Entradas y Cobros de CxC</strong>
+                            </t>
+                            <t t-else="">
+                                <strong>Reporte Diario de Entradas / Cobros de CxC</strong>
+                            </t>
                         </h4>
                         <p style="margin: 2px 0 15px 0;">
-                            Fecha de Registro : <t t-esc="doc.date_report" t-options='{"widget": "date"}'/>
+                            <t t-if="data['is_range']">
+                                Período :
+                                <t t-esc="data['date_from']" t-options='{"widget": "date"}'/>
+                                al
+                                <t t-esc="data['date_to']" t-options='{"widget": "date"}'/>
+                            </t>
+                            <t t-else="">
+                                Fecha de Registro : <t t-esc="doc.date_report" t-options='{"widget": "date"}'/>
+                            </t>
                         </p>
 
                         <!-- ════════════════════════════════════════════

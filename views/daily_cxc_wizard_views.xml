@@ -11,7 +11,10 @@
             <form string="Cobros de Cuentas por Cobrar (CxC)">
                 <group>
                     <group>
-                        <field name="date_report"/>
+                        <field name="period_type" widget="radio"/>
+                        <field name="date_report" invisible="period_type != 'day'"/>
+                        <field name="date_from" invisible="period_type != 'month'" required="period_type == 'month'"/>
+                        <field name="date_to" invisible="period_type != 'month'" required="period_type == 'month'"/>
                         <field name="company_id" groups="base.group_multi_company"/>
                     </group>
                 </group>

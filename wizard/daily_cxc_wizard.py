@@ -12,12 +12,39 @@ class MbaDailyCxcWizard(models.TransientModel):
         required=True,
         default=fields.Date.context_today,
     )
+    date_from = fields.Date(
+        "Fecha Desde",
+    )
+    date_to = fields.Date(
+        "Fecha Hasta",
+    )
+    period_type = fields.Selection(
+        [
+            ('day', 'Diario'),
+            ('month', 'Mensual / Rango'),
+        ],
+        string="Tipo de Cierre",
+        default='day',
+        required=True,
+        help="Diario cubre un solo día. Mensual / Rango cubre el período seleccionado.",
+    )
     company_id = fields.Many2one(
         'res.company',
         string="Empresa",
         required=True,
         default=lambda self: self.env.company,
     )
+
+    # ── Rango de fechas ─────────────────────────────────────────────────────
+
+    def _get_date_bounds(self):
+        """Devuelve (desde, hasta) como objetos date."""
+        self.ensure_one()
+        if self.date_from and self.date_to:
+            if self.date_from > self.date_to:
+                return self.date_to, self.date_from
+            return self.date_from, self.date_to
+        return self.date_report, self.date_report
 
     # ── Acción principal ────────────────────────────────────────────────────
 
@@ -168,13 +195,15 @@ class MbaDailyCxcWizard(models.TransientModel):
 
     def _get_credit_invoices(self):
         """
-        Facturas a crédito emitidas en el día por el canal de ventas.
+        Facturas a crédito emitidas en el período por el canal de ventas.
 
         Sección informativa: NO suma a los totales de cobros, porque emitir
         una factura a crédito no representa una entrada de dinero.
         """
+        date_from, date_to = self._get_date_bounds()
         invoices = self.env['account.move'].search([
-            ('invoice_date', '=', self.date_report),
+            ('invoice_date', '>=', date_from),
+            ('invoice_date', '<=', date_to),
             ('move_type', '=', 'out_invoice'),
             ('state', '=', 'posted'),
             ('company_id', '=', self.company_id.id),
@@ -193,12 +222,14 @@ class MbaDailyCxcWizard(models.TransientModel):
         Venta NO entra aquí: tiene su propio reporte de cierre.
         """
         self.ensure_one()
+        date_from, date_to = self._get_date_bounds()
 
-        # 1. Pagos entrantes del día.
+        # 1. Pagos entrantes del período.
         #    Odoo 18: los estados de account.payment son
         #    draft | in_process | paid | canceled | rejected
         payments = self.env['account.payment'].search([
-            ('date', '=', self.date_report),
+            ('date', '>=', date_from),
+            ('date', '<=', date_to),
             ('payment_type', '=', 'inbound'),
             ('state', 'in', ('in_process', 'paid')),
             ('company_id', '=', self.company_id.id),
@@ -213,7 +244,6 @@ class MbaDailyCxcWizard(models.TransientModel):
                 continue
 
             reconciled = self._get_reconciled_invoices(p)
-
 
             # Filtro de alcance: solo cartera de ventas a crédito.
             # Un pago sin factura conciliada es un anticipo o abono a saldo;
@@ -262,7 +292,7 @@ class MbaDailyCxcWizard(models.TransientModel):
         )
         grand_total = sum(d['amount'] for d in payment_details)
 
-        # 2. Sección informativa: facturas a crédito emitidas hoy.
+        # 2. Sección informativa: facturas a crédito emitidas en el período.
         credit_details = []
         for inv in self._get_credit_invoices():
             partner_ref = inv.partner_id.ref or inv.partner_id.vat or ''
@@ -289,6 +319,9 @@ class MbaDailyCxcWizard(models.TransientModel):
         return {
             'company': self.company_id,
             'date_report': self.date_report,
+            'date_from': date_from,
+            'date_to': date_to,
+            'is_range': date_from != date_to,
             'time_report': fields.Datetime.context_timestamp(
                 self, datetime.now()
             ).strftime('%I:%M %p'),
@@ -297,7 +330,7 @@ class MbaDailyCxcWizard(models.TransientModel):
             'details': payment_details,
             'grand_total': grand_total,
             'total_count': len(payment_details),
-            # Informativo: facturación a crédito del día (no suma a cobros)
+            # Informativo: facturación a crédito (no suma a cobros)
             'credit_invoices': credit_details,
             'credit_totals': credit_totals,
         }
@@ -305,20 +338,29 @@ class MbaDailyCxcWizard(models.TransientModel):
     # ── API para Cliente Dinámico (OWL Frontend) ────────────────────────────
 
     @api.model
-    def get_client_report_data(self, date_report=None, company_id=None):
+    def get_client_report_data(self, date_report=None, company_id=None,
+                               period_type='day', date_from=None, date_to=None):
         """
-        Retorna la información del reporte diario de cobros CxC en un diccionario
+        Retorna la información del reporte de cobros CxC en un diccionario
         serializable a JSON para ser consumido asíncronamente por el dashboard OWL.
         """
-        if not date_report:
-            date_report = fields.Date.context_today(self)
         if not company_id:
             company_id = self.env.company.id
 
-        wizard = self.create({
-            'date_report': date_report,
+        vals = {
+            'period_type': period_type or 'day',
             'company_id': company_id,
-        })
+        }
+        if date_from and date_to:
+            vals['date_from'] = date_from
+            vals['date_to'] = date_to
+            vals['date_report'] = date_from
+        else:
+            if not date_report:
+                date_report = fields.Date.context_today(self)
+            vals['date_report'] = date_report
+
+        wizard = self.create(vals)
         raw_data = wizard._get_report_data()
 
         # Formatear números para pantalla
@@ -339,6 +381,9 @@ class MbaDailyCxcWizard(models.TransientModel):
             'company_name': raw_data['company'].name,
             'company_id': raw_data['company'].id,
             'date_report': str(raw_data['date_report']),
+            'date_from': str(raw_data['date_from']),
+            'date_to': str(raw_data['date_to']),
+            'is_range': raw_data['is_range'],
             'time_report': raw_data['time_report'],
             'methods': raw_data['methods'],
             'details': raw_data['details'],

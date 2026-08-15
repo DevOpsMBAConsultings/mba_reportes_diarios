@@ -720,6 +720,48 @@ class MbaDailyPosWizard(models.TransientModel):
         )
         total_pagos = sum(m['amount'] for m in payment_methods)
 
+        # ── Cobros / Abonos de CxC del período ──────────────────────────
+        # Cartera recuperada: pagos en account.payment que no son de POS y
+        # que abonan a facturas o anticipos de clientes.
+        cxc_breakdown = {}
+        cxc_total = 0.0
+        cxc_payments = self.env['account.payment'].search([
+            ('date', '>=', bound_from),
+            ('date', '<=', bound_to),
+            ('payment_type', '=', 'inbound'),
+            ('state', 'in', ('in_process', 'paid')),
+            ('company_id', '=', self.company_id.id),
+        ], order='date, name asc')
+
+        for p in cxc_payments:
+            # Excluir pagos de POS
+            if 'pos_payment_method_id' in p._fields and p.pos_payment_method_id:
+                continue
+            if 'pos_order_ids' in p.move_id._fields and p.move_id.pos_order_ids:
+                continue
+            memo = (p.memo or '').lower()
+            move_ref = (p.move_id.ref or '').lower() if p.move_id else ''
+            if any(kw in memo for kw in ('pos/', 'punto de venta', 'combine los pagos')) or any(kw in move_ref for kw in ('pos/', 'punto de venta')):
+                continue
+
+            mname = self._payment_method_label(p) or _('Otros')
+            amt = p.amount or 0.0
+            if mname not in cxc_breakdown:
+                cxc_breakdown[mname] = {
+                    'name': mname,
+                    'amount': 0.0,
+                    'count': 0,
+                }
+            cxc_breakdown[mname]['amount'] += amt
+            cxc_breakdown[mname]['count'] += 1
+            cxc_total += amt
+
+        cxc_methods = sorted(
+            cxc_breakdown.values(),
+            key=lambda x: x['amount'],
+            reverse=True,
+        )
+
         # ── Detalle de órdenes ──────────────────────────────────────────
         order_details = []
         for order in orders:
@@ -862,9 +904,15 @@ class MbaDailyPosWizard(models.TransientModel):
             'total_ventas_ventas': total_ventas_ventas,
             'total_ordenes_pos': total_ordenes_pos,
             'total_ordenes_ventas': total_ordenes_ventas,
-            # Pagos
+            # Pagos de Ventas
             'payment_methods': payment_methods,
             'total_pagos': total_pagos,
+            # Recaudo de Cuentas por Cobrar (Abonos)
+            'cxc_methods': cxc_methods,
+            'cxc_total': cxc_total,
+            'formatted_cxc_total': self.fmt(cxc_total),
+            'total_recaudo_general': total_pagos + cxc_total,
+            'formatted_total_recaudo_general': self.fmt(total_pagos + cxc_total),
             # Detalle de órdenes
             'orders': order_details,
             'order_totals': order_totals,
@@ -912,6 +960,9 @@ class MbaDailyPosWizard(models.TransientModel):
         # Formatear números
         for m in raw_data['payment_methods']:
             m['formatted_amount'] = wizard.fmt(m['amount'])
+
+        for cm in raw_data['cxc_methods']:
+            cm['formatted_amount'] = wizard.fmt(cm['amount'])
 
         for o in raw_data['orders']:
             o['formatted_amount_untaxed'] = wizard.fmt(o['amount_untaxed'])
@@ -961,6 +1012,11 @@ class MbaDailyPosWizard(models.TransientModel):
             'payment_methods': raw_data['payment_methods'],
             'total_pagos': raw_data['total_pagos'],
             'formatted_total_pagos': wizard.fmt(raw_data['total_pagos']),
+            'cxc_methods': raw_data['cxc_methods'],
+            'cxc_total': raw_data['cxc_total'],
+            'formatted_cxc_total': raw_data['formatted_cxc_total'],
+            'total_recaudo_general': raw_data['total_recaudo_general'],
+            'formatted_total_recaudo_general': raw_data['formatted_total_recaudo_general'],
             'orders': raw_data['orders'],
             'order_totals': ot,
             'products': raw_data['products'],

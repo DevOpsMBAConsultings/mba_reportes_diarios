@@ -48,7 +48,7 @@
                         <div class="o_mba_kpi_value" t-esc="state.data.total_count"/>
                     </div>
                     <div class="o_mba_report_kpi">
-                        <div class="o_mba_kpi_label">Facturado a Crédito Hoy</div>
+                        <div class="o_mba_kpi_label">Facturado a Crédito (<t t-esc="state.data.is_range ? 'Período' : 'Hoy'"/>)</div>
                         <div class="o_mba_kpi_value" t-esc="state.data.credit_totals.formatted_amount_total"/>
                     </div>
                 </div>

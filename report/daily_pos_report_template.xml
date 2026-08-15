@@ -194,11 +194,11 @@
                         </table>
 
                         <!-- ════════════════════════════════════════════
-                             DESGLOSE POR MÉTODO DE PAGO
+                             DESGLOSE POR MÉTODO DE PAGO (VENTAS)
                              ════════════════════════════════════════════ -->
                         <t t-if="data['payment_methods']">
                             <p style="margin-bottom: 8px;">
-                                <strong><u>DESGLOSE POR MÉTODO DE PAGO</u></strong>
+                                <strong><u>DESGLOSE POR MÉTODO DE PAGO (VENTAS)</u></strong>
                             </p>
                             <table style="width: 60%; border-collapse: collapse; font-size: 10px; margin-bottom: 15px;">
                                 <thead>
@@ -225,10 +225,52 @@
                                 </tbody>
                                 <tfoot>
                                     <tr style="font-weight: bold; border-top: 2px solid #333;">
-                                        <td style="padding: 4px 6px;">Total</td>
+                                        <td style="padding: 4px 6px;">Total Ventas Cobradas</td>
                                         <td style="padding: 4px 6px;"/>
                                         <td style="padding: 4px 6px; text-align: right;">
                                             <t t-esc="doc.fmt(data['total_pagos'])"/>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </t>
+
+                        <!-- ════════════════════════════════════════════
+                             RECAUDO DE CUENTAS POR COBRAR (CXC / ABONOS)
+                             ════════════════════════════════════════════ -->
+                        <t t-if="data['cxc_methods']">
+                            <p style="margin-top: 15px; margin-bottom: 8px;">
+                                <strong><u>RECAUDO DE CUENTAS POR COBRAR (ABONOS / CRÉDITO)</u></strong>
+                            </p>
+                            <table style="width: 60%; border-collapse: collapse; font-size: 10px; margin-bottom: 15px;">
+                                <thead>
+                                    <tr style="background-color: #1F4E79; color: white;">
+                                        <th style="border: 1px solid #666; padding: 4px 6px; text-align: left;">Método / Banco</th>
+                                        <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Transacciones</th>
+                                        <th style="border: 1px solid #666; padding: 4px 6px; text-align: right;">Monto Recaudado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="data['cxc_methods']" t-as="cm">
+                                        <tr style="page-break-inside: avoid;">
+                                            <td style="border-bottom: 1px solid #ddd; padding: 3px 6px;">
+                                                <t t-esc="cm['name']"/>
+                                            </td>
+                                            <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                                <t t-esc="cm['count']"/>
+                                            </td>
+                                            <td style="border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right;">
+                                                <t t-esc="doc.fmt(cm['amount'])"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="font-weight: bold; border-top: 2px solid #333; background-color: #f2f2f2;">
+                                        <td style="padding: 4px 6px;">Total Recaudado CxC</td>
+                                        <td style="padding: 4px 6px;"/>
+                                        <td style="padding: 4px 6px; text-align: right;">
+                                            <t t-esc="doc.fmt(data['cxc_total'])"/>
                                         </td>
                                     </tr>
                                 </tfoot>

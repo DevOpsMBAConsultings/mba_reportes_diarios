@@ -158,7 +158,7 @@
                                 <h3 class="o_mba_report_section_title">
                                     <i class="fa fa-chevron-down me-1 text-muted" t-if="!isCollapsed('payments')"></i>
                                     <i class="fa fa-chevron-right me-1 text-muted" t-if="isCollapsed('payments')"></i>
-                                    Desglose por Métodos de Pago
+                                    Desglose por Métodos de Pago (Ventas)
                                 </h3>
                                 <span class="o_mba_amount fw-bold text-primary" t-esc="state.data.formatted_total_pagos"/>
                             </div>
@@ -189,8 +189,46 @@
                                     </tbody>
                                     <tfoot>
                                         <tr class="o_mba_total_row">
-                                            <td colspan="2" class="text-end">TOTAL RECAUDADO:</td>
+                                            <td colspan="2" class="text-end">TOTAL VENTAS COBRADAS:</td>
                                             <td class="o_mba_amount text-primary" t-esc="state.data.formatted_total_pagos"/>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Recaudo de CxC (Abonos a Créditos) -->
+                        <div class="o_mba_report_section mt-3" t-if="state.data.cxc_methods and state.data.cxc_methods.length > 0">
+                            <div class="o_mba_report_section_header" t-on-click="() => this.toggleSection('cxc_payments')" style="cursor: pointer;">
+                                <h3 class="o_mba_report_section_title">
+                                    <i class="fa fa-chevron-down me-1 text-muted" t-if="!isCollapsed('cxc_payments')"></i>
+                                    <i class="fa fa-chevron-right me-1 text-muted" t-if="isCollapsed('cxc_payments')"></i>
+                                    Recaudo de Cuentas por Cobrar (Abonos)
+                                </h3>
+                                <span class="o_mba_amount fw-bold text-success" t-esc="state.data.formatted_cxc_total"/>
+                            </div>
+                            <div t-if="!isCollapsed('cxc_payments')">
+                                <table class="o_mba_report_table">
+                                    <thead>
+                                        <tr>
+                                            <th>Método / Banco</th>
+                                            <th class="text-end">Transacciones</th>
+                                            <th class="text-end">Monto Recaudado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="state.data.cxc_methods" t-as="cm" t-key="cm.name">
+                                            <tr>
+                                                <td class="fw-bold" t-esc="cm.name"/>
+                                                <td class="text-end" t-esc="cm.count"/>
+                                                <td class="o_mba_amount" t-esc="cm.formatted_amount"/>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="o_mba_total_row">
+                                            <td colspan="2" class="text-end">TOTAL RECAUDADO CXC:</td>
+                                            <td class="o_mba_amount text-success" t-esc="state.data.formatted_cxc_total"/>
                                         </tr>
                                     </tfoot>
                                 </table>
