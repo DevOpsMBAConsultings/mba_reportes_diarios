@@ -273,7 +273,7 @@
                                     <t t-foreach="state.data.orders" t-as="o" t-key="o.order_id">
                                         <tr>
                                             <td>
-                                                <span class="o_mba_link" t-on-click="() => this.openOrder(o.order_id)">
+                                                <span class="o_mba_link" t-on-click="() => this.openOrder(o.order_id, o.res_model)">
                                                     <t t-esc="o.name"/>
                                                 </span>
                                             </td>

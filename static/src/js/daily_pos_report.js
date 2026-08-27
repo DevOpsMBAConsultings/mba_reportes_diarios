@@ -64,11 +64,11 @@ export class DailyPosReport extends Component {
         await this.loadData();
     }
 
-    openOrder(orderId) {
+    openOrder(orderId, resModel) {
         if (!orderId) return;
         this.actionService.doAction({
             type: "ir.actions.act_window",
-            res_model: "pos.order",
+            res_model: resModel || "pos.order",
             res_id: orderId,
             views: [[false, "form"]],
             target: "current",
