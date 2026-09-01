@@ -99,29 +99,47 @@
                                 </t>
                             </tbody>
                             <tfoot>
-                                <!-- Fila de Totales Diarios -->
+                                <!-- Fila 1: Total Ingresos Diarios (Caja) -->
                                 <tr style="font-weight: bold; background-color: #2F5597; color: white;">
                                     <td style="border: 1px solid #444; padding: 4px; text-align: left;">
-                                        TOTAL INGRESOS DIARIOS
+                                        TOTAL INGRESOS COBRADOS (DÍA)
                                     </td>
                                     <t t-foreach="data['daily_totals']" t-as="d_tot">
                                         <td style="border: 1px solid #444; padding: 4px 2px; text-align: right;">
                                             <t t-esc="doc.fmt_total(d_tot)"/>
                                         </td>
                                     </t>
-                                    <td style="border: 1px solid #444; padding: 4px; text-align: right; background-color: #C00000; font-size: 9px;">
+                                    <td style="border: 1px solid #444; padding: 4px; text-align: right; background-color: #1F4E79; font-size: 9px;">
                                         <t t-esc="doc.fmt_total(data['grand_total_mtd'])"/>
+                                    </td>
+                                </tr>
+                                <!-- Fila 2: Total Facturado / Ventas Diarias -->
+                                <tr style="font-weight: bold; background-color: #D9E1F2; color: #1F4E79;">
+                                    <td style="border: 1px solid #444; padding: 4px; text-align: left;">
+                                        TOTAL FACTURADO / VENTAS (DÍA)
+                                    </td>
+                                    <t t-foreach="data['daily_sales_totals']" t-as="s_tot">
+                                        <td style="border: 1px solid #444; padding: 4px 2px; text-align: right;">
+                                            <t t-esc="doc.fmt_total(s_tot)"/>
+                                        </td>
+                                    </t>
+                                    <td style="border: 1px solid #444; padding: 4px; text-align: right; background-color: #2E7D32; color: white; font-size: 9px;">
+                                        <t t-esc="doc.fmt_total(data['grand_sales_total_mtd'])"/>
                                     </td>
                                 </tr>
                             </tfoot>
                         </table>
 
-                        <p style="margin-top: 8px; font-size: 8px; font-style: italic; color: #666;">
-                            Las filas marcadas como informativas no forman parte del total de ingresos.
-                            La facturación a crédito emitida en el período suma
-                            <strong><t t-esc="doc.fmt_total(data['credit_total_mtd'])"/></strong>
-                            y se refleja como ingreso en la fila de Cobros CxC cuando el cliente efectivamente paga.
-                        </p>
+                        <table style="width: 100%; margin-top: 10px; font-size: 8px; border: 1px solid #B4C6E7; background-color: #F2F5F9; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 6px; line-height: 1.4;">
+                                    <strong style="color: #1F4E79;">Resumen Gerencial del Período:</strong><br/>
+                                    • <strong>Total Facturado / Ventas del Mes:</strong> <t t-esc="doc.fmt_total(data['grand_sales_total_mtd'])"/> (Ventas de Contado + Facturas a Crédito emitidas).<br/>
+                                    • <strong>Total Ingresos Cobrados (Caja/Bancos):</strong> <t t-esc="doc.fmt_total(data['grand_total_mtd'])"/> (Ventas de Contado cobradas + Cobros de CxC recaudados).<br/>
+                                    • <strong>Facturación a Crédito Emitida en el Mes:</strong> <t t-esc="doc.fmt_total(data['credit_total_mtd'])"/> (Se refleja como ingreso en Cobros CxC a medida que los clientes efectúan sus pagos).
+                                </td>
+                            </tr>
+                        </table>
 
                     </div>
                 </t>

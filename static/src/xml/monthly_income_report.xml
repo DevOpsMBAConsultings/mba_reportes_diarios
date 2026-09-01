@@ -42,11 +42,15 @@
                 <!-- KPI Summary Cards -->
                 <div class="o_mba_report_kpis">
                     <div class="o_mba_report_kpi o_mba_kpi_success">
-                        <div class="o_mba_kpi_label">Total Ingresos Acumulado (MTD)</div>
+                        <div class="o_mba_kpi_label">Total Ingresos Cobrados (Caja/Bancos)</div>
                         <div class="o_mba_kpi_value" t-esc="state.data.formatted_grand_total_mtd"/>
                     </div>
+                    <div class="o_mba_report_kpi o_mba_kpi_primary">
+                        <div class="o_mba_kpi_label">Total Facturado / Ventas del Mes</div>
+                        <div class="o_mba_kpi_value" t-esc="state.data.formatted_grand_sales_total_mtd"/>
+                    </div>
                     <div class="o_mba_report_kpi o_mba_kpi_info">
-                        <div class="o_mba_kpi_label">Facturación a Crédito Emitida (Informativo)</div>
+                        <div class="o_mba_kpi_label">Facturación a Crédito Emitida</div>
                         <div class="o_mba_kpi_value" t-esc="state.data.formatted_credit_total_mtd"/>
                     </div>
                 </div>
@@ -54,13 +58,13 @@
                 <!-- Table 1: Matriz Horizontal MTD (Día por Día) -->
                 <div class="o_mba_report_section">
                     <div class="o_mba_report_section_header">
-                        <h3 class="o_mba_report_section_title">Evolución Diaria de Ingresos (MTD)</h3>
+                        <h3 class="o_mba_report_section_title">Evolución Diaria de Ingresos y Ventas (MTD)</h3>
                     </div>
                     <div class="table-responsive">
                         <table class="o_mba_report_table">
                             <thead>
                                 <tr>
-                                    <th style="min-width: 220px; position: sticky; left: 0; background-color: #f1f3f5; z-index: 2;">Concepto de Ingreso</th>
+                                    <th style="min-width: 220px; position: sticky; left: 0; background-color: #f1f3f5; z-index: 2;">Concepto de Ingreso / Venta</th>
                                     <t t-foreach="state.data.day_headers" t-as="h" t-key="h.date">
                                         <th class="text-end" style="min-width: 90px;">
                                             <div t-esc="h.label"/>
@@ -88,11 +92,20 @@
                             </tbody>
                             <tfoot>
                                 <tr class="o_mba_total_row">
-                                    <td style="position: sticky; left: 0; background-color: #f1f3f5; z-index: 1;">TOTAL INGRESOS DÍA:</td>
+                                    <td style="position: sticky; left: 0; background-color: #f1f3f5; z-index: 1;">TOTAL INGRESOS COBRADOS DÍA:</td>
                                     <t t-foreach="state.data.formatted_daily_totals" t-as="dt" t-key="dt_index">
                                         <td class="o_mba_amount text-primary" t-esc="dt"/>
                                     </t>
                                     <td class="o_mba_amount text-primary fs-6" style="position: sticky; right: 0; background-color: #f1f3f5; z-index: 1;" t-esc="state.data.formatted_grand_total_mtd"/>
+                                </tr>
+                                <tr class="o_mba_total_row" style="border-top: 2px solid #0d6efd;">
+                                    <td style="position: sticky; left: 0; background-color: #e8f4fd; z-index: 1;">
+                                        <strong>TOTAL FACTURADO / VENTAS DÍA:</strong>
+                                    </td>
+                                    <t t-foreach="state.data.formatted_daily_sales_totals" t-as="dst" t-key="dst_index">
+                                        <td class="o_mba_amount text-success fw-bold" t-esc="dst"/>
+                                    </t>
+                                    <td class="o_mba_amount text-success fs-6 fw-bold" style="position: sticky; right: 0; background-color: #e8f4fd; z-index: 1;" t-esc="state.data.formatted_grand_sales_total_mtd"/>
                                 </tr>
                             </tfoot>
                         </table>

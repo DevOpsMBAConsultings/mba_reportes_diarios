@@ -57,6 +57,7 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
         subtitle_fmt = workbook.add_format({'font_size': 10, 'font_color': '#4B5563'})
         kpi_title_fmt = workbook.add_format({'bold': True, 'font_size': 9, 'font_color': '#6B7280'})
         kpi_value_fmt = workbook.add_format({'bold': True, 'font_size': 13, 'font_color': '#047857', 'num_format': '$#,##0.00'})
+        kpi_sales_fmt = workbook.add_format({'bold': True, 'font_size': 13, 'font_color': '#1E40AF', 'num_format': '$#,##0.00'})
         kpi_info_value_fmt = workbook.add_format({'bold': True, 'font_size': 13, 'font_color': '#0284C7', 'num_format': '$#,##0.00'})
 
         header_fmt = workbook.add_format({'bold': True, 'bg_color': '#F3F4F6', 'font_color': '#374151', 'border': 1, 'align': 'left'})
@@ -70,25 +71,31 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
         num_zero_fmt = workbook.add_format({'border': 1, 'align': 'center', 'font_color': '#9CA3AF'})
         total_num_fmt = workbook.add_format({'bold': True, 'num_format': '#,##0.00', 'border': 1, 'bg_color': '#F9FAFB', 'align': 'right'})
 
-        grand_total_label_fmt = workbook.add_format({'bold': True, 'bg_color': '#EEF2FF', 'font_color': '#1E40AF', 'border': 1, 'align': 'left'})
-        grand_total_num_fmt = workbook.add_format({'bold': True, 'num_format': '#,##0.00', 'border': 1, 'bg_color': '#EEF2FF', 'font_color': '#1E40AF', 'align': 'right'})
+        grand_income_label_fmt = workbook.add_format({'bold': True, 'bg_color': '#EEF2FF', 'font_color': '#1E40AF', 'border': 1, 'align': 'left'})
+        grand_income_num_fmt = workbook.add_format({'bold': True, 'num_format': '#,##0.00', 'border': 1, 'bg_color': '#EEF2FF', 'font_color': '#1E40AF', 'align': 'right'})
+
+        grand_sales_label_fmt = workbook.add_format({'bold': True, 'bg_color': '#ECFDF5', 'font_color': '#047857', 'border': 1, 'align': 'left'})
+        grand_sales_num_fmt = workbook.add_format({'bold': True, 'num_format': '#,##0.00', 'border': 1, 'bg_color': '#ECFDF5', 'font_color': '#047857', 'align': 'right'})
 
         ws = workbook.add_worksheet("Resumen MTD")
 
         # Título y metadatos
-        ws.write(0, 0, f"Resumen Mensual de Ingresos (MTD) - {raw_data['company'].name}", title_fmt)
+        ws.write(0, 0, f"Resumen Mensual de Ingresos y Ventas (MTD) - {raw_data['company'].name}", title_fmt)
         ws.write(1, 0, f"Rango: {raw_data['date_from']} al {raw_data['date_to']} | Generado: {raw_data['time_report']}", subtitle_fmt)
 
         # KPIs superiores
-        ws.write(3, 0, "Total Ingresos Acumulado (MTD)", kpi_title_fmt)
+        ws.write(3, 0, "Total Ingresos Cobrados (Caja/Bancos)", kpi_title_fmt)
         ws.write(4, 0, raw_data['grand_total_mtd'], kpi_value_fmt)
 
-        ws.write(3, 3, "Facturación a Crédito Emitida (Informativo)", kpi_title_fmt)
-        ws.write(4, 3, raw_data['credit_total_mtd'], kpi_info_value_fmt)
+        ws.write(3, 3, "Total Facturado / Ventas del Mes", kpi_title_fmt)
+        ws.write(4, 3, raw_data['grand_sales_total_mtd'], kpi_sales_fmt)
+
+        ws.write(3, 6, "Facturación a Crédito Emitida", kpi_title_fmt)
+        ws.write(4, 6, raw_data['credit_total_mtd'], kpi_info_value_fmt)
 
         # Encabezados de la tabla
         row = 6
-        ws.write(row, 0, "Concepto de Ingreso", header_fmt)
+        ws.write(row, 0, "Concepto de Ingreso / Venta", header_fmt)
         col = 1
         for h in raw_data['day_headers']:
             ws.write(row, col, f"{h['label']}\n{h['day_name']}", day_header_fmt)
@@ -112,12 +119,20 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
             ws.write(row, total_col, cr['total'], total_num_fmt)
             row += 1
 
-        # Fila de Total Ingresos Día
-        ws.write(row, 0, "TOTAL INGRESOS DÍA:", grand_total_label_fmt)
+        # Fila 1 de Totales: Total Ingresos Cobrados Día
+        ws.write(row, 0, "TOTAL INGRESOS COBRADOS DÍA:", grand_income_label_fmt)
         for i, val in enumerate(raw_data['daily_totals']):
             c_idx = i + 1
-            ws.write(row, c_idx, val, grand_total_num_fmt)
-        ws.write(row, total_col, raw_data['grand_total_mtd'], grand_total_num_fmt)
+            ws.write(row, c_idx, val, grand_income_num_fmt)
+        ws.write(row, total_col, raw_data['grand_total_mtd'], grand_income_num_fmt)
+        row += 1
+
+        # Fila 2 de Totales: Total Facturado / Ventas Día
+        ws.write(row, 0, "TOTAL FACTURADO / VENTAS DÍA:", grand_sales_label_fmt)
+        for i, val in enumerate(raw_data['daily_sales_totals']):
+            c_idx = i + 1
+            ws.write(row, c_idx, val, grand_sales_num_fmt)
+        ws.write(row, total_col, raw_data['grand_sales_total_mtd'], grand_sales_num_fmt)
 
         # Ajuste de anchos de columna
         ws.set_column(0, 0, 38)
@@ -216,10 +231,10 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
             })
 
         # Estructura de conceptos de ingreso
-        # 'informative': la fila se muestra pero NO suma a los totales.
-        # Emitir una factura a crédito no es dinero recibido, y esa misma
+        # 'informative': la fila se muestra pero NO suma a los totales de ingresos.
+        # Emitir una factura a crédito no es dinero recibido en caja, y esa misma
         # plata vuelve a contarse en COBROS CXC cuando efectivamente se cobra.
-        # Sumarla producía un doble conteo en el total general.
+        # Sumarla a ingresos producía un doble conteo.
         concepts = [
             {'code': 'efectivo', 'name': 'EFECTIVO', 'informative': False},
             {'code': 'clave', 'name': 'TARJETA CLAVE (DÉBITO)', 'informative': False},
@@ -250,8 +265,6 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
                 matrix['facturas_credito'][d] += amount
 
         # 2. Obtener todos los pagos del rango
-        # Odoo 18: los estados de account.payment son
-        # draft | in_process | paid | canceled | rejected
         payments = self.env['account.payment'].search([
             ('date', '>=', date_from),
             ('date', '<=', date_to),
@@ -281,9 +294,10 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
             for line in receivable_lines:
                 for partial in line.matched_debit_ids:
                     inv_move = partial.debit_move_id.move_id
-                    if inv_move.is_invoice() and inv_move.invoice_date < d:
-                        is_cxc = True
-                        break
+                    if inv_move.is_invoice():
+                        if (inv_move.invoice_date and inv_move.invoice_date < d) or self._is_invoice_credit(inv_move):
+                            is_cxc = True
+                            break
                 if is_cxc:
                     break
 
@@ -300,18 +314,7 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
                     else:
                         matrix['ach_directo'][d] += amount
 
-        # 3. Caja del Punto de Venta (POS).
-        #
-        # Regla de negocio de Moto Lider: "caja es POS". El bloque anterior
-        # (account.payment) solo cubre el canal de ventas/distribución; POS
-        # no genera account.payment (pos.payment crea asientos directamente,
-        # ver _create_payment_moves en point_of_sale). Sin este bloque, el
-        # resumen mensual subestimaba el ingreso real: toda la venta de
-        # mostrador quedaba fuera.
-        #
-        # POS es siempre contado (regla ya aplicada en _is_invoice_credit),
-        # así que solo alimenta efectivo/clave/visa_masterd/ach_directo.
-        # Nunca toca cobros_cxc ni facturas_credito.
+        # 3. Caja del Punto de Venta (POS)
         if 'pos.order' in self.env:
             pos_date_start = datetime.combine(date_from, time.min)
             pos_date_end = datetime.combine(date_to, time.max)
@@ -323,10 +326,6 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
             ])
 
             for order in pos_orders:
-                # Conversión a la fecha local (context) del asiento POS:
-                # date_order se guarda en UTC: usar la fecha naive tal cual
-                # puede correr el día de una venta hecha en horas de la
-                # noche a la fecha siguiente.
                 d = fields.Datetime.context_timestamp(
                     self, order.date_order
                 ).date()
@@ -348,8 +347,6 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
                             matrix['visa_masterd'][d] += amount
                         else:
                             matrix['ach_directo'][d] += amount
-                    # 'pay_later' se ignora: no representa dinero recibido.
-                    # Moto Lider no da de alta ese método en POS.
 
         # 4. Calcular totales acumulados MTD por concepto y por día
         concept_rows = []
@@ -366,7 +363,7 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
                 val = matrix[row_code][d]
                 daily_values.append(val)
                 row_total += val
-                # Las filas informativas no alimentan los totales de ingresos.
+                # Las filas informativas no alimentan los totales de ingresos de caja.
                 if not informative:
                     daily_totals[d] += val
 
@@ -384,6 +381,21 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
 
         daily_totals_list = [daily_totals[d] for d in days_list]
 
+        # 5. Calcular totales diarios y acumulados de VENTAS / FACTURADO
+        # Total Ventas = Contado (Efectivo + Clave + Tarjetas + ACH) + Facturas a Crédito emitidas
+        daily_sales_totals = []
+        for d in days_list:
+            day_cash_sales = (
+                matrix['efectivo'][d] +
+                matrix['clave'][d] +
+                matrix['visa_masterd'][d] +
+                matrix['ach_directo'][d]
+            )
+            day_credit_sales = matrix['facturas_credito'][d]
+            daily_sales_totals.append(day_cash_sales + day_credit_sales)
+
+        grand_sales_total_mtd = sum(daily_sales_totals)
+
         return {
             'company': self.company_id,
             'date_from': date_from,
@@ -395,7 +407,8 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
             'concept_rows': concept_rows,
             'daily_totals': daily_totals_list,
             'grand_total_mtd': grand_total_mtd,
-            # Informativo, fuera del total de ingresos
+            'daily_sales_totals': daily_sales_totals,
+            'grand_sales_total_mtd': grand_sales_total_mtd,
             'credit_total_mtd': credit_total_mtd,
         }
 
@@ -443,6 +456,7 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
             })
 
         formatted_daily_totals = [wizard.fmt_total(v) for v in raw_data['daily_totals']]
+        formatted_daily_sales_totals = [wizard.fmt_total(v) for v in raw_data['daily_sales_totals']]
 
         return {
             'company_name': raw_data['company'].name,
@@ -454,9 +468,12 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
             'concept_rows': rows,
             'daily_totals': raw_data['daily_totals'],
             'formatted_daily_totals': formatted_daily_totals,
+            'daily_sales_totals': raw_data['daily_sales_totals'],
+            'formatted_daily_sales_totals': formatted_daily_sales_totals,
             'grand_total_mtd': raw_data['grand_total_mtd'],
             'formatted_grand_total_mtd': wizard.fmt_total(raw_data['grand_total_mtd']),
+            'grand_sales_total_mtd': raw_data['grand_sales_total_mtd'],
+            'formatted_grand_sales_total_mtd': wizard.fmt_total(raw_data['grand_sales_total_mtd']),
             'credit_total_mtd': raw_data['credit_total_mtd'],
             'formatted_credit_total_mtd': wizard.fmt_total(raw_data['credit_total_mtd']),
         }
-
