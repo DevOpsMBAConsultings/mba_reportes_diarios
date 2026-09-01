@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import io
+import base64
+import xlsxwriter
 from odoo import api, fields, models, _
 from datetime import datetime, date, time, timedelta
 from dateutil.relativedelta import relativedelta
@@ -38,6 +41,107 @@ class MbaMonthlyIncomeWizard(models.TransientModel):
         return self.env.ref(
             'mba_reportes_diarios.action_report_monthly_income'
         ).report_action(self)
+
+    def action_export_xlsx(self):
+        """Genera el reporte de Resumen Mensual MTD en formato Excel (.xlsx)."""
+        if self._ids and isinstance(self._ids[0], (list, tuple)):
+            self = self.browse(self._ids[0][0])
+        self.ensure_one()
+        raw_data = self._get_report_data()
+
+        output = io.BytesIO()
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+
+        # Formatos
+        title_fmt = workbook.add_format({'bold': True, 'font_size': 14, 'font_color': '#1E3A8A'})
+        subtitle_fmt = workbook.add_format({'font_size': 10, 'font_color': '#4B5563'})
+        kpi_title_fmt = workbook.add_format({'bold': True, 'font_size': 9, 'font_color': '#6B7280'})
+        kpi_value_fmt = workbook.add_format({'bold': True, 'font_size': 13, 'font_color': '#047857', 'num_format': '$#,##0.00'})
+        kpi_info_value_fmt = workbook.add_format({'bold': True, 'font_size': 13, 'font_color': '#0284C7', 'num_format': '$#,##0.00'})
+
+        header_fmt = workbook.add_format({'bold': True, 'bg_color': '#F3F4F6', 'font_color': '#374151', 'border': 1, 'align': 'left'})
+        day_header_fmt = workbook.add_format({'bold': True, 'bg_color': '#F3F4F6', 'font_color': '#374151', 'border': 1, 'align': 'center', 'text_wrap': True})
+        total_header_fmt = workbook.add_format({'bold': True, 'bg_color': '#E5E7EB', 'font_color': '#111827', 'border': 1, 'align': 'right'})
+
+        concept_fmt = workbook.add_format({'bold': True, 'border': 1, 'font_size': 9, 'font_color': '#1F2937'})
+        concept_info_fmt = workbook.add_format({'bold': True, 'border': 1, 'font_size': 9, 'font_color': '#4B5563'})
+
+        num_fmt = workbook.add_format({'num_format': '#,##0.00', 'border': 1, 'align': 'right'})
+        num_zero_fmt = workbook.add_format({'border': 1, 'align': 'center', 'font_color': '#9CA3AF'})
+        total_num_fmt = workbook.add_format({'bold': True, 'num_format': '#,##0.00', 'border': 1, 'bg_color': '#F9FAFB', 'align': 'right'})
+
+        grand_total_label_fmt = workbook.add_format({'bold': True, 'bg_color': '#EEF2FF', 'font_color': '#1E40AF', 'border': 1, 'align': 'left'})
+        grand_total_num_fmt = workbook.add_format({'bold': True, 'num_format': '#,##0.00', 'border': 1, 'bg_color': '#EEF2FF', 'font_color': '#1E40AF', 'align': 'right'})
+
+        ws = workbook.add_worksheet("Resumen MTD")
+
+        # Título y metadatos
+        ws.write(0, 0, f"Resumen Mensual de Ingresos (MTD) - {raw_data['company'].name}", title_fmt)
+        ws.write(1, 0, f"Rango: {raw_data['date_from']} al {raw_data['date_to']} | Generado: {raw_data['time_report']}", subtitle_fmt)
+
+        # KPIs superiores
+        ws.write(3, 0, "Total Ingresos Acumulado (MTD)", kpi_title_fmt)
+        ws.write(4, 0, raw_data['grand_total_mtd'], kpi_value_fmt)
+
+        ws.write(3, 3, "Facturación a Crédito Emitida (Informativo)", kpi_title_fmt)
+        ws.write(4, 3, raw_data['credit_total_mtd'], kpi_info_value_fmt)
+
+        # Encabezados de la tabla
+        row = 6
+        ws.write(row, 0, "Concepto de Ingreso", header_fmt)
+        col = 1
+        for h in raw_data['day_headers']:
+            ws.write(row, col, f"{h['label']}\n{h['day_name']}", day_header_fmt)
+            col += 1
+        ws.write(row, col, "TOTAL MTD", total_header_fmt)
+        total_col = col
+
+        # Filas de conceptos
+        row += 1
+        for cr in raw_data['concept_rows']:
+            is_info = cr.get('informative', False)
+            ws.write(row, 0, cr['name'] + (" (Informativo)" if is_info else ""), concept_info_fmt if is_info else concept_fmt)
+            
+            for i, val in enumerate(cr['values']):
+                c_idx = i + 1
+                if val == 0.0 or val is None:
+                    ws.write(row, c_idx, "-", num_zero_fmt)
+                else:
+                    ws.write(row, c_idx, val, num_fmt)
+            
+            ws.write(row, total_col, cr['total'], total_num_fmt)
+            row += 1
+
+        # Fila de Total Ingresos Día
+        ws.write(row, 0, "TOTAL INGRESOS DÍA:", grand_total_label_fmt)
+        for i, val in enumerate(raw_data['daily_totals']):
+            c_idx = i + 1
+            ws.write(row, c_idx, val, grand_total_num_fmt)
+        ws.write(row, total_col, raw_data['grand_total_mtd'], grand_total_num_fmt)
+
+        # Ajuste de anchos de columna
+        ws.set_column(0, 0, 38)
+        ws.set_column(1, total_col - 1, 10)
+        ws.set_column(total_col, total_col, 15)
+
+        workbook.close()
+        output.seek(0)
+
+        filename = f"Resumen_Mensual_Ingresos_{raw_data['date_from']}_{raw_data['date_to']}.xlsx"
+        attachment = self.env['ir.attachment'].create({
+            'name': filename,
+            'type': 'binary',
+            'datas': base64.b64encode(output.read()),
+            'res_model': self._name,
+            'res_id': self.id,
+            'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        })
+
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/{attachment.id}?download=true',
+            'target': 'self',
+        }
 
     # ── Helpers de formato ──────────────────────────────────────────────────
 

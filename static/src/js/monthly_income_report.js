@@ -64,8 +64,22 @@ export class MonthlyIncomeReport extends Component {
     }
 
     async exportXlsx() {
-        return this.printPdf();
+        const res = await this.orm.create("mba.monthly.income.wizard", [{
+            date_from: this.state.date_from,
+            date_to: this.state.date_to,
+            company_id: this.state.data.company_id,
+        }]);
+        const id = Array.isArray(res) ? res[0] : res;
+
+        const action = await this.orm.call(
+            "mba.monthly.income.wizard",
+            "action_export_xlsx",
+            [[id]]
+        );
+
+        return this.actionService.doAction(action);
     }
 }
 
 registry.category("actions").add("mba_monthly_income_report", MonthlyIncomeReport);
+
